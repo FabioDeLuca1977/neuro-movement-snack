@@ -199,6 +199,9 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 section.view > *,.box > *{min-width:0}
 select{max-width:100%}
 #ambEx{flex:1;min-width:0}
+.tinput{font:inherit;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+#sxL2 p{margin:0 0 8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -287,14 +290,22 @@ select{max-width:100%}
         </div>
         <label class="check small"><input type="checkbox" id="sound"> Suono quando è ora della pausa</label>
         <label class="check small"><input type="checkbox" id="notif"> Notifica quando è ora della pausa</label>
-        <p class="muted small">Il promemoria funziona mentre l'app è aperta (anche in secondo piano, ma il telefono può rallentarlo). Con 60 minuti segue il protocollo studiato: 3 minuti di pausa ogni ora.</p>
+        <p class="muted small">Con 60 minuti segue il protocollo studiato: 3 minuti di pausa ogni ora. Il conto continua anche se ricarichi la pagina, ma il telefono lo ferma quando l'app è chiusa o lo schermo è spento: appena la riapri, se la pausa è scaduta te lo dice.</p>
+        <details class="neuro" id="calBox"><summary><b>Avviso sicuro anche a schermo spento</b><span>Calendario</span></summary>
+          <p class="small">Un'app web non può far suonare il telefono quando è chiusa. Il calendario sì: l'app crea le pause come eventi ricorrenti, dal lunedì al venerdì, con un avviso all'ora giusta.</p>
+          <div class="row"><span class="row" style="gap:8px"><label for="calFrom">Dalle</label><input type="time" id="calFrom" value="09:00" class="tinput"></span>
+            <span class="row" style="gap:8px"><label for="calTo">alle</label><input type="time" id="calTo" value="18:00" class="tinput"></span></div>
+          <p class="muted small" id="calInfo"></p>
+          <button class="btn primary block" id="calMake">Metti le pause nel calendario</button>
+          <p class="muted small">Si apre o si scarica un file .ics: aprilo e scegli "Aggiungi". Se il tuo calendario non mostra l'avviso, attiva le notifiche predefinite per gli eventi. Per toglierle, cancella la serie di eventi "Pausa · Neuro Movement Snack".</p>
+        </details>
       </div>
     </section>
 
     <!-- ESERCIZI -->
     <section class="view" id="view-esercizi" hidden>
       <h2 class="big" data-eyebrow="Movement Snack + Pit Stop">Esercizi</h2>
-      <p class="muted">Movement Snack (MS) e Pit Stop (PS) in un'unica mappa. Ogni esercizio ha la sua etichetta della prova. Quelli di livello 2 sono intensi: l'app non li suggerisce mai, li scegli tu.</p>
+      <p class="muted">Movement Snack (MS) e Pit Stop (PS) in un'unica mappa. Ogni esercizio ha la sua etichetta della prova. Quelli segnati INTENSA l'app non li suggerisce mai: li scegli tu, dopo aver letto l'avviso di sicurezza.</p>
       <div id="allCards"></div>
       <div class="box">
         <h3>Repertorio: 44 voci per variare</h3>
@@ -415,7 +426,7 @@ select{max-width:100%}
       </div>
       <div class="box">
         <h3>Privacy e limiti</h3>
-        <p>I dati restano solo su questo dispositivo e nessuno li vede. Pit Stop non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
+        <p>I dati restano solo su questo dispositivo e nessuno li vede. Neuro Movement Snack non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
       </div>
     </section>
   </main>
@@ -436,7 +447,10 @@ select{max-width:100%}
         <h2 id="sxTitle"></h2>
         <p class="mono" id="sxCode"></p>
       </div>
-      <p class="note" id="sxL2" hidden>Intensità elevata (livello 2). Fallo solo se lo scegli tu, se ti senti bene e se l'azienda e, dove presente, il medico competente hanno dato il via libera.</p>
+      <div class="note" id="sxL2" hidden><p><b>Intensità elevata: prima di iniziare</b></p>
+        <p>Fallo solo se lo scegli tu e ti senti bene. Se hai problemi di cuore o di pressione, sei in gravidanza, hai dolori alle articolazioni o non fai attività da tempo, chiedi prima al medico (in azienda, al medico competente).</p>
+        <p><b>Fermati subito</b> se senti dolore o peso al petto, capogiro, fiato corto fuori dal normale o battito irregolare.</p>
+        <label class="check small"><input type="checkbox" id="sxOk"> Ho letto e mi sento bene</label></div>
       <div id="sxStartBox"></div>
       <div>
         <h3 style="margin-bottom:6px">Come si fa</h3>
@@ -895,19 +909,33 @@ $("suggestBtn").addEventListener("click",()=>{
 
 
 // ---------- Promemoria ----------
-let remaining = 60*60, running=false, tick=null;
-function setIntervalLen(){ remaining = (+$("interval").value)*60; drawTimer(); }
+// Il conto si basa sull'orario della prossima pausa, salvato sul dispositivo:
+// regge la ricarica della pagina e, se il telefono ha sospeso l'app, recupera appena torni.
+const TKEY = "pitstop.timer";
+let remaining = 60*60, running=false, tick=null, nextAt=0;
+const everyMs = () => (+$("interval").value)*60000;
+function saveTimer(){ try{ localStorage.setItem(TKEY, JSON.stringify({running, nextAt, every:$("interval").value})); }catch(e){} }
 function drawTimer(){
   $("countdown").textContent = mmss(remaining);
   $("hdrNext").textContent = running ? `PAUSA TRA ${mmss(remaining)}` : "PROMEMORIA SPENTO";
 }
+function updTimer(){
+  if(running){
+    const now=Date.now();
+    if(now>=nextAt){ nextAt += Math.ceil((now-nextAt+1)/everyMs())*everyMs(); saveTimer(); due(); }
+    remaining = Math.max(0, Math.round((nextAt-Date.now())/1000));
+  } else remaining = (+$("interval").value)*60;
+  drawTimer();
+}
+function startTimer(){ running=true; clearInterval(tick); tick=setInterval(updTimer,1000); $("timerToggle").textContent="Ferma"; }
+function setIntervalLen(){ if(running){ nextAt=Date.now()+everyMs(); saveTimer(); } updTimer(); }
 $("interval").addEventListener("change",setIntervalLen);
 $("timerToggle").addEventListener("click",()=>{
-  running=!running; $("timerToggle").textContent = running?"Ferma":"Avvia";
-  if(running){ tick=setInterval(()=>{ remaining--; if(remaining<=0){ due(); remaining=(+$("interval").value)*60; } drawTimer(); },1000); }
-  else clearInterval(tick);
-  drawTimer();
+  if(running){ running=false; clearInterval(tick); $("timerToggle").textContent="Avvia"; }
+  else { nextAt=Date.now()+everyMs(); startTimer(); }
+  saveTimer(); updTimer();
 });
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && running) updTimer(); });
 let audio=null;
 $("sound").addEventListener("change",()=>{ if($("sound").checked && !audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } });
 function beep(){
@@ -917,7 +945,39 @@ function beep(){
     o.connect(g).connect(audio.destination); o.start(audio.currentTime+dt); o.stop(audio.currentTime+dt+.32); }); }catch(e){}
 }
 let due = function(){ showView("adesso"); $("dueAlert").hidden=false; $("suggestion").hidden=true; beep(); $("dueAlert").scrollIntoView({behavior:"smooth"}); };
-drawTimer();
+// riprende il promemoria lasciato acceso
+try{ const t=JSON.parse(localStorage.getItem(TKEY)||"null");
+  if(t && t.running){ $("interval").value=t.every; nextAt=t.nextAt; startTimer(); } }catch(e){}
+setTimeout(updTimer,0);
+
+// ---------- Calendario: pause come eventi ricorrenti con avviso ----------
+function calSlots(){
+  const every = +$("interval").value>=45 ? +$("interval").value : 60;
+  const m = s => { const [a,b]=(s||"0:0").split(":").map(Number); return a*60+b; };
+  const out=[]; for(let t=m($("calFrom").value)+every; t<m($("calTo").value); t+=every) out.push(t);
+  return {every, out};
+}
+function calInfo(){ const {every,out}=calSlots();
+  $("calInfo").textContent = out.length ? `${out.length} pause al giorno, ogni ${every} minuti: ${out.map(t=>`${Math.floor(t/60)}:${String(t%60).padStart(2,"0")}`).join(", ")}.` : "Nessuna pausa in questa fascia oraria."; }
+["calFrom","calTo","interval"].forEach(id=>$(id).addEventListener("input",calInfo)); calInfo();
+$("calMake").addEventListener("click",()=>{
+  const {out}=calSlots(); if(!out.length){ toast("Scegli una fascia oraria più ampia"); return; }
+  const day=new Date(); while(day.getDay()===0||day.getDay()===6) day.setDate(day.getDate()+1);
+  const p2=n=>String(n).padStart(2,"0"), ymd=`${day.getFullYear()}${p2(day.getMonth()+1)}${p2(day.getDate())}`;
+  const now=new Date(), stamp=now.toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  const ev=out.map((t,i)=>["BEGIN:VEVENT",`UID:nms-${ymd}-${i}-${now.getTime()}@neuro-movement-snack`,`DTSTAMP:${stamp}`,
+    `DTSTART:${ymd}T${p2(Math.floor(t/60))}${p2(t%60)}00`,"DURATION:PT3M","RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR",
+    "SUMMARY:Pausa · Neuro Movement Snack","DESCRIPTION:Apri l'app: dimmi come stai e ti propongo l'esercizio adatto.",
+    "URL:https://fabiodeluca1977.github.io/neuro-movement-snack/",
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:È ora di una pausa","TRIGGER:PT0M","END:VALARM","END:VEVENT"].join("\r\n"));
+  const ics=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Neuro Movement Snack//IT","CALSCALE:GREGORIAN",...ev,"END:VCALENDAR"].join("\r\n")+"\r\n";
+  const url=URL.createObjectURL(new Blob([ics],{type:"text/calendar;charset=utf-8"}));
+  const a=document.createElement("a"); a.href=url;
+  // su iPhone e iPad il file si apre direttamente nel calendario; altrove si scarica
+  if(!/iPhone|iPad|iPod/.test(navigator.userAgent) && !(navigator.maxTouchPoints>1 && /Macintosh/.test(navigator.userAgent))) a.download="pause-neuro-movement-snack.ics";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),60000);
+  toast("File del calendario pronto");
+});
 
 // ---------- Schermata esercizio: etichetta e avvio ----------
 let cur=null, run=null;
@@ -951,6 +1011,7 @@ function openSession(id){
       <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select></div>
       <button class="btn primary block" id="sxStart" style="margin-top:10px">Inizia</button>`;
     $("sxStart").onclick=()=>beginRun(x, +$("sxMin").value*60000, 0);
+    if(x.lvl===2){ $("sxOk").checked=false; $("sxStart").disabled=true; $("sxOk").onchange=()=>{ $("sxStart").disabled=!$("sxOk").checked; }; }
   } else if(x.habit==="caffe"){
     box.innerHTML=`<div class="box thin"><label for="bed">A che ora vai a dormire?</label><input type="time" id="bed" value="23:00" style="font:inherit;min-height:44px;padding:0 8px;border:2px solid var(--line);background:var(--surface);color:var(--fg)">
       <p id="lastCoffee" class="num" style="font-size:1.3rem"></p></div>`;
@@ -967,6 +1028,12 @@ function openSession(id){
 
 // ---------- Esercizio in corso: Pausa, Salta, Concludi ----------
 function stopTimers(){ if(run){ clearTimeout(run.sub); clearInterval(run.cd); clearInterval(run.prog); } }
+// tiene acceso lo schermo mentre l'esercizio è in corso (dove il browser lo consente)
+let wl=null;
+async function keepAwake(on){ try{
+  if(on){ if(!wl && "wakeLock" in navigator){ wl=await navigator.wakeLock.request("screen"); wl.addEventListener("release",()=>{ wl=null; }); } }
+  else if(wl){ const w=wl; wl=null; await w.release(); } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden && run && !run.paused) keepAwake(true); });
 function speak(text){
   if(!$("voiceOn").checked || !("speechSynthesis" in window)) return;
   try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="it-IT"; u.rate=0.95;
@@ -994,7 +1061,7 @@ function beginRun(x, totalMs, doneMs){
     if(x.seq) $("segs").innerHTML=x.seq.map(()=>"<span></span>").join("");
     $("segs").hidden=!x.seq;
   }
-  run.prog=setInterval(tickRun,250); tickRun();
+  run.prog=setInterval(tickRun,250); keepAwake(true); tickRun();
 }
 function elapsed(){ return run.done + (run.paused?0:performance.now()-run.t0); }
 function tickRun(){
@@ -1033,6 +1100,7 @@ $("bSkip").addEventListener("click",()=>{
 });
 $("bDone").addEventListener("click",()=>finish());
 function finish(){
+  keepAwake(false);
   // riepilogo: tempo fatto davvero ed esercizi raggiunti
   let cells="";
   if(run){
@@ -1056,7 +1124,7 @@ $("sxSave").addEventListener("click",()=>{
   S.sessions.unshift({ex:cur.id,d:iso(new Date()),pe:p.e,pt:p.t,ae:+$("pe").value,at:+$("pt").value}); save();
   pre=null; closeSession(); toast("Pausa salvata nel diario");
 });
-function closeSession(){ stopTimers(); run=null; $("session").hidden=true; $("session").classList.remove("night"); document.body.style.overflow=""; }
+function closeSession(){ keepAwake(false); stopTimers(); run=null; $("session").hidden=true; $("session").classList.remove("night"); document.body.style.overflow=""; }
 $("sxClose").addEventListener("click",closeSession);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("session").hidden) closeSession(); });
 
@@ -1086,7 +1154,7 @@ function renderNeuro(){
 renderNeuro();
 
 // ---------- Diario ----------
-function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
+function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null,amb:S.amb}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
 $("clearExamples").addEventListener("click",()=>clearExamples(false));
 $("saveDay").addEventListener("click",()=>{
   if(S.example) clearExamples(true);
