@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f6f62">
+<meta name="description" content="Pause brevi basate sugli studi, con il livello di prova dichiarato.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pit Stop">
+<title>Pit Stop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+/* Layout: una colonna stretta da "strumento da tasca"; barra delle schede in alto, schermata esercizio a tutta pagina sopra il resto. */
+:root{
+  --bg:#eef3f1; --surface:#ffffff; --sunk:#e1eae7; --line:#c9d6d2;
+  --fg:#13282c; --muted:#4f6468; --accent:#1f6f62; --accent-ink:#ffffff; --accent-soft:#d3ebe5;
+  --energy:#2a78d6; --tension:#eb6834;
+  --good:#1b7a4c; --good-soft:#dcefe3; --warn:#9a6400; --warn-soft:#f6ead2; --hyp:#6a4fa3; --hyp-soft:#ebe4f6;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1b1d; --surface:#172729; --sunk:#0b1416; --line:#2c4144;
+  --fg:#e3eeec; --muted:#9fb4b6; --accent:#5cc2ad; --accent-ink:#06201b; --accent-soft:#1d3d38;
+  --energy:#3987e5; --tension:#d95926;
+  --good:#6fd39e; --good-soft:#173527; --warn:#e5b04f; --warn-soft:#3a2d12; --hyp:#b9a2ea; --hyp-soft:#2c2442;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1b1d; --surface:#172729; --sunk:#0b1416; --line:#2c4144;
+  --fg:#e3eeec; --muted:#9fb4b6; --accent:#5cc2ad; --accent-ink:#06201b; --accent-soft:#1d3d38;
+  --energy:#3987e5; --tension:#d95926;
+  --good:#6fd39e; --good-soft:#173527; --warn:#e5b04f; --warn-soft:#3a2d12; --hyp:#b9a2ea; --hyp-soft:#2c2442;
+  color-scheme:dark}
+
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0}
+img{max-width:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:560px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:1.6rem}
+h2{font-size:1.3rem}
+h3{font-size:1.05rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.num{font-variant-numeric:tabular-nums}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-top:14px}
+.brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.brand .proto{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:12px;padding:4px;background:var(--sunk);border-radius:12px}
+nav.tabs button{font:inherit;font-size:.9rem;border:0;background:transparent;color:var(--muted);padding:8px 4px;border-radius:9px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--surface);color:var(--fg);font-weight:700}
+main{display:grid;gap:20px;padding-top:20px}
+section.view{display:grid;gap:16px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:14px}
+button,.btn{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 16px;border-radius:10px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.ghost{background:transparent}
+.btn:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+/* Slider dello stato */
+.gauge{display:grid;gap:6px}
+.gauge .lbl{display:flex;justify-content:space-between;align-items:baseline}
+.gauge .lbl b{font-family:var(--display);font-size:1.4rem}
+.gauge input[type=range]{width:100%}
+.gauge.energy input{accent-color:var(--energy)}
+.gauge.tension input{accent-color:var(--tension)}
+.scale{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:.95rem}
+.check input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent)}
+
+/* Timer del promemoria */
+.timer{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center}
+.timer svg{width:84px;height:84px}
+.timer .t{font-family:var(--display);font-size:1.6rem}
+select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+
+.alert{border-radius:12px;padding:14px 16px;background:var(--accent-soft);display:grid;gap:10px}
+.note{border-radius:10px;padding:10px 12px;background:var(--warn-soft);font-size:.9rem}
+
+/* Schede esercizio */
+.cards{display:grid;gap:10px}
+.card{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;text-align:left;width:100%;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--fg)}
+.card:hover{border-color:var(--accent)}
+.card .meta{grid-column:1;font-size:.85rem;color:var(--muted)}
+.card .go{grid-row:1/3;grid-column:2;font-size:1.3rem;color:var(--accent)}
+.card.top{border:2px solid var(--accent)}
+.group-h{font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.why{font-size:.9rem;color:var(--muted)}
+
+.ev{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;border-radius:999px;padding:2px 10px;white-space:nowrap}
+.ev::before{content:"";width:8px;height:8px;border-radius:2px;background:currentColor}
+.ev.good{background:var(--good-soft);color:var(--good)}
+.ev.warn{background:var(--warn-soft);color:var(--warn)}
+.ev.warn::before{border-radius:50%}
+.ev.hyp{background:var(--hyp-soft);color:var(--hyp)}
+.ev.hyp::before{transform:rotate(45deg)}
+
+/* Schermata esercizio */
+#session{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) max(16px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 32px) max(16px,env(safe-area-inset-left,0px))}
+#session .wrap{display:grid;gap:16px}
+.steps{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.breath{display:grid;place-items:center;gap:10px;padding:10px 0}
+.orb{width:min(62vw,240px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 35%,var(--accent-soft),var(--accent));
+  transform:scale(.55);transition-property:transform;transition-timing-function:ease-in-out}
+.phase{font-family:var(--display);font-size:1.5rem;text-align:center;min-height:2em}
+.bar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;width:100%}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+details.src summary{cursor:pointer;font-weight:700}
+details.src{font-size:.92rem}
+
+/* Diario */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--sunk);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--display);font-size:1.15rem;white-space:nowrap}
+.stat span{font-size:.78rem;color:var(--muted)}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend svg{width:24px;height:8px}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:.8rem;padding:6px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-110%)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.badge-ex{font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;background:var(--warn-soft);color:var(--warn);border-radius:999px;padding:2px 8px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:30;font-size:.95rem}
+ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
+
+@media (prefers-reduced-motion: reduce){.orb{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Pit Stop</h1>
+      <span class="proto">Prototipo</span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sezioni">
+      <button role="tab" id="tab-adesso" data-view="adesso" aria-selected="true">Adesso</button>
+      <button role="tab" id="tab-esercizi" data-view="esercizi" aria-selected="false">Esercizi</button>
+      <button role="tab" id="tab-diario" data-view="diario" aria-selected="false">Diario</button>
+      <button role="tab" id="tab-info" data-view="info" aria-selected="false">Info</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ADESSO -->
+    <section class="view" id="view-adesso">
+      <div class="panel">
+        <div class="timer">
+          <svg viewBox="0 0 84 84" aria-hidden="true">
+            <circle cx="42" cy="42" r="36" fill="none" stroke="var(--sunk)" stroke-width="8"></circle>
+            <circle id="ring" cx="42" cy="42" r="36" fill="none" stroke="var(--accent)" stroke-width="8" stroke-linecap="round"
+              transform="rotate(-90 42 42)" stroke-dasharray="226.2" stroke-dashoffset="0"></circle>
+          </svg>
+          <div style="display:grid;gap:6px;min-width:0">
+            <span class="muted small">Prossima pausa tra</span>
+            <span class="t num" id="countdown">60:00</span>
+            <div class="row">
+              <label class="small" for="interval">Ogni</label>
+              <select id="interval">
+                <option value="45">45 min</option>
+                <option value="60" selected>60 min</option>
+                <option value="90">90 min</option>
+                <option value="1">1 min (prova)</option>
+              </select>
+              <button class="btn ghost small" id="timerToggle">Avvia</button>
+            </div>
+          </div>
+        </div>
+        <label class="check small"><input type="checkbox" id="sound"> Suono quando è ora della pausa</label>
+        <label class="check small"><input type="checkbox" id="notif"> Notifica quando è ora della pausa</label>
+        <p class="muted small">Il promemoria funziona mentre l'app è aperta (anche in secondo piano, ma il telefono può rallentarlo). Nella versione completa la pausa verrebbe proposta in base al calendario, per esempio dopo 90 minuti di riunioni di fila.</p>
+      </div>
+
+      <div class="alert" id="dueAlert" hidden>
+        <h3>È ora di un pit stop</h3>
+        <p>Dimmi come stai e ti propongo l'esercizio adatto.</p>
+      </div>
+
+      <div class="panel" id="checkin">
+        <h2>Come stai adesso?</h2>
+        <div class="gauge energy">
+          <div class="lbl"><label for="e">Energia</label><b class="num" id="eVal">5</b></div>
+          <input type="range" id="e" min="0" max="10" value="5">
+          <div class="scale"><span>0 scarico</span><span>10 pieno</span></div>
+        </div>
+        <div class="gauge tension">
+          <div class="lbl"><label for="t">Tensione</label><b class="num" id="tVal">5</b></div>
+          <input type="range" id="t" min="0" max="10" value="5">
+          <div class="scale"><span>0 calmo</span><span>10 molto teso</span></div>
+        </div>
+        <label class="check"><input type="checkbox" id="heavy"> Ho appena finito un lavoro molto impegnativo</label>
+        <label class="check"><input type="checkbox" id="team"> Sono con il mio gruppo</label>
+        <button class="btn primary" id="suggestBtn">Proponi una pausa</button>
+      </div>
+
+      <div class="panel" id="suggestion" hidden></div>
+    </section>
+
+    <!-- ESERCIZI -->
+    <section class="view" id="view-esercizi" hidden>
+      <p class="muted">Dieci pratiche brevi. Ognuna dichiara su quali studi si basa e quanto sono solide le prove.</p>
+      <div class="cards" id="allCards"></div>
+    </section>
+
+    <!-- DIARIO -->
+    <section class="view" id="view-diario" hidden>
+      <div class="note" id="exampleNote" hidden>
+        <span class="badge-ex">Dati di esempio</span>
+        Questi numeri sono inventati per mostrare come funziona il diario.
+        <div class="row" style="margin-top:8px"><button class="btn" id="clearExamples">Cancella gli esempi e inizia</button></div>
+      </div>
+
+      <div class="panel">
+        <h2>Le tue pause</h2>
+        <div class="stats">
+          <div class="stat"><b class="num" id="sCount">0</b><span>pause registrate</span></div>
+          <div class="stat"><b class="num" id="sDE">–</b><span>energia, media prima → dopo</span></div>
+          <div class="stat"><b class="num" id="sDT">–</b><span>tensione, media prima → dopo</span></div>
+        </div>
+        <p class="muted small">Sono misure che dai tu, subito prima e subito dopo la pausa, senza un gruppo di confronto. Parte del cambiamento può dipendere dall'aspettativa. Servono a capire cosa funziona per te, non dimostrano un effetto.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Fine giornata</h2>
+        <p class="muted small">Ogni sera segna come chiudi la giornata. Sono questi i dati che servono per l'esperimento.</p>
+        <div class="gauge energy">
+          <div class="lbl"><label for="de">Energia</label><b class="num" id="deVal">5</b></div>
+          <input type="range" id="de" min="0" max="10" value="5">
+        </div>
+        <div class="gauge tension">
+          <div class="lbl"><label for="dt">Tensione</label><b class="num" id="dtVal">5</b></div>
+          <input type="range" id="dt" min="0" max="10" value="5">
+        </div>
+        <button class="btn primary" id="saveDay">Salva oggi</button>
+      </div>
+
+      <div class="panel">
+        <h2>Esperimento di 2 settimane</h2>
+        <div id="expBox"></div>
+        <div class="chart" id="chart"></div>
+        <div class="legend" aria-hidden="true">
+          <span><svg viewBox="0 0 24 8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--energy)" stroke-width="2"/></svg>Energia</span>
+          <span><svg viewBox="0 0 24 8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--tension)" stroke-width="2" stroke-dasharray="5 3"/></svg>Tensione</span>
+          <span><svg viewBox="0 0 24 8"><line x1="12" y1="0" x2="12" y2="8" stroke="var(--muted)" stroke-width="2" stroke-dasharray="2 2"/></svg>Inizio esperimento</span>
+        </div>
+        <details>
+          <summary class="small">Vedi i dati in tabella</summary>
+          <div class="tablewrap" id="dayTable"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- INFO -->
+    <section class="view" id="view-info" hidden>
+      <div class="panel">
+        <h2>Come leggere le prove</h2>
+        <ul class="plain">
+          <li><span class="ev good">Prove buone</span> revisioni o più studi concordi.</li>
+          <li><span class="ev warn">Indizi</span> studi piccoli o non ancora confermati.</li>
+          <li><span class="ev hyp">Ipotesi</span> idea progettuale da verificare.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Cosa non promettiamo</h2>
+        <ul class="plain">
+          <li>Niente "detox di dopamina" o "reset del cervello".</li>
+          <li>Niente docce fredde "per la resilienza": la noradrenalina sale, ma i benefici non sono stati misurati.</li>
+          <li>Niente integratori di GABA, 5-HTP o triptofano. Il 5-HTP insieme agli antidepressivi è anche rischioso.</li>
+          <li>Niente "più produttività del X%": le micro-pause riducono la fatica, ma non migliorano in modo dimostrato la prestazione nei compiti impegnativi.</li>
+          <li>Un esercizio non "produce" una molecola: cambia le condizioni, non dosa sostanze.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Due studi alla base del progetto</h2>
+        <p><b>Albulescu e colleghi, 2022</b> (PLOS ONE). Meta-analisi su 22 campioni e 2.335 persone: le micro-pause fino a 10 minuti aumentano il vigore e riducono la fatica, con effetti piccoli. Dopo un lavoro molto pesante servono pause più lunghe.</p>
+        <p><b>Fleming, 2024</b> (Industrial Relations Journal). 46.336 lavoratori: chi partecipa a interventi solo individuali non sta meglio degli altri. Per questo Pit Stop prevede anche regole di squadra e il sostegno dell'organizzazione.</p>
+      </div>
+      <div class="panel">
+        <h2>Privacy e limiti</h2>
+        <p>I dati restano solo su questo dispositivo e nessuno li vede. Pit Stop non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- SCHERMATA ESERCIZIO -->
+<div id="session" hidden role="dialog" aria-modal="true" aria-labelledby="sxTitle">
+  <div class="wrap">
+    <div class="row" style="justify-content:space-between">
+      <span class="group-h" id="sxGroup"></span>
+      <button class="btn ghost small" id="sxClose">Chiudi</button>
+    </div>
+    <h2 id="sxTitle"></h2>
+    <div class="row" id="sxMeta"></div>
+    <ol class="steps" id="sxSteps"></ol>
+    <div id="sxRun"></div>
+    <details class="src" open>
+      <summary>Perché funziona</summary>
+      <div id="sxWhy" style="display:grid;gap:8px;margin-top:8px"></div>
+    </details>
+    <div class="panel" id="sxAfter" hidden>
+      <h3>Come stai dopo la pausa?</h3>
+      <div class="gauge energy">
+        <div class="lbl"><label for="pe">Energia</label><b class="num" id="peVal">5</b></div>
+        <input type="range" id="pe" min="0" max="10" value="5">
+      </div>
+      <div class="gauge tension">
+        <div class="lbl"><label for="pt">Tensione</label><b class="num" id="ptVal">5</b></div>
+        <input type="range" id="pt" min="0" max="10" value="5">
+      </div>
+      <button class="btn primary" id="sxSave">Salva nel diario</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// ---------- Contenuti: solo studi verificati nel documento "Neuro Snack - progetto" ----------
+const EX = [
+  {id:"respiro", group:"Calmare", name:"Respiro a 6", dur:"3–5 min", mins:[3,5],
+   steps:["Inspira per 4 secondi.","Espira per 6 secondi.","Sono circa 6 respiri al minuto: segui il cerchio."],
+   breath:[{l:"Inspira",s:4,sc:1},{l:"Espira",s:6,sc:.55}],
+   why:"Respirare sotto i 10 respiri al minuto aumenta la variabilità cardiaca; negli studi calano ansia e attivazione.",
+   src:[["Zaccaro e colleghi, 2018: revisione di 15 studi sul respiro lento.","good"],["Goessl e colleghi, 2017: 24 studi con biofeedback della variabilità cardiaca, effetto ampio (0,83) sullo stress riferito. Con il biofeedback, non con il solo respiro.","warn"]],
+   when:"Prima di una riunione difficile, dopo una telefonata tesa."},
+  {id:"sospiro", group:"Calmare", name:"Sospiro ciclico", dur:"5 min", mins:[5],
+   steps:["Inspira dal naso.","Aggiungi una seconda inspirazione breve, per riempire i polmoni.","Espira lentamente dalla bocca, più a lungo dell'inspirazione.","Il ritmo del cerchio è indicativo: adattalo a te."],
+   breath:[{l:"Inspira dal naso",s:2.5,sc:.95},{l:"Ancora un piccolo respiro",s:1,sc:1.05},{l:"Espira dalla bocca",s:6,sc:.55}],
+   why:"In uno studio di un mese ha migliorato l'umore più della meditazione mindfulness.",
+   src:[["Balban e colleghi, 2023 (Cell Reports Medicine). Non c'era un gruppo senza trattamento, quindi l'effetto va confermato.","warn"]],
+   when:"Come rituale quotidiano, per esempio a fine giornata."},
+  {id:"pausa", group:"Ricaricare", name:"Pausa vera", dur:"fino a 10 min", mins:[5,10],
+   steps:["Stacca davvero dal compito.","Alzati, guarda fuori, scambia due parole.","Non passare a un altro schermo."],
+   why:"Le micro-pause aumentano il vigore e riducono la fatica. Gli effetti sono piccoli, e le pause più lunghe danno più beneficio.",
+   src:[["Albulescu e colleghi, 2022 (PLOS ONE): meta-analisi su 22 campioni, 2.335 persone. Nessun effetto dimostrato sulla prestazione nei compiti impegnativi.","good"]],
+   when:"Ogni 60–90 minuti di lavoro concentrato."},
+  {id:"luce", group:"Ricaricare", name:"Luce fuori", dur:"10 min", mins:[10],
+   steps:["Esci all'aperto, meglio la mattina.","Niente occhiali da sole se non servono.","Puoi farla insieme alla pausa caffè."],
+   why:"La luce del mattino regola l'orologio biologico, la melatonina e il picco del cortisolo.",
+   src:[["Golden e colleghi, 2005: la luce intensa è efficace nella depressione stagionale.","good"],["Lambert e colleghi, 2002: il ricambio di serotonina è legato alle ore di sole (correlazione). L'effetto sull'umore nelle persone sane non è dimostrato direttamente.","warn"]],
+   when:"Soprattutto d'inverno."},
+  {id:"muovi", group:"Ricaricare", name:"Muoversi", dur:"5–10 min", mins:[5,10],
+   steps:["Camminata svelta o qualche rampa di scale.","Puoi trasformare una riunione a due in una riunione camminando."],
+   why:"Una singola seduta di esercizio alza il BDNF, una proteina legata alla plasticità del cervello. I benefici sull'umore sono dimostrati con programmi regolari, non con una singola pausa.",
+   src:[["Szuhany e colleghi, 2015: meta-analisi sul BDNF dopo l'esercizio.","good"],["Noetel e colleghi, 2024: l'esercizio regolare migliora la depressione. Non dimostra l'effetto di una singola pausa.","warn"]],
+   when:"Pausa pranzo, dopo molte ore seduti."},
+  {id:"ridere", group:"Connettere", name:"Ridere insieme", dur:"3 min", mins:[3], team:true,
+   steps:["Un momento leggero condiviso con il gruppo.","Funziona insieme ad altri, non da soli davanti a un video."],
+   why:"Durante la risata condivisa il cervello rilascia oppioidi endogeni, legati al senso di legame.",
+   src:[["Manninen e colleghi, 2017: studio con la PET su soli 12 uomini.","warn"]],
+   when:"In apertura di una riunione di squadra."},
+  {id:"ritmo", group:"Connettere", name:"Ritmo comune", dur:"3 min", mins:[3], team:true,
+   steps:["Il gruppo fa insieme un movimento o un battito ritmico, tutti allo stesso tempo.","Basta battere le mani su un ritmo semplice."],
+   why:"Muoversi in sincronia alza la soglia del dolore e il senso di legame più dello stesso movimento fatto da soli.",
+   src:[["Cohen e colleghi, 2010, e Tarr e colleghi, 2015: studi sperimentali piccoli.","warn"]],
+   when:"Per riattivare il gruppo dopo pranzo."},
+  {id:"caffe", group:"Proteggere il sonno", name:"Regola delle 6 ore", dur:"abitudine", habit:"caffe",
+   steps:["Prendi l'ultimo caffè almeno 6 ore prima di andare a dormire."],
+   why:"La caffeina presa fino a 6 ore prima di dormire riduce il sonno di oltre un'ora, e le persone non se ne accorgono.",
+   src:[["Drake e colleghi, 2013: 400 mg di caffeina, solo 12 persone.","warn"]],
+   when:"Ogni giorno."},
+  {id:"sera", group:"Proteggere il sonno", name:"Sera in penombra", dur:"abitudine",
+   steps:["Nell'ora prima di dormire usa luce calda e bassa.","Riduci gli schermi."],
+   why:"La luce degli schermi la sera sopprime la melatonina e ritarda l'orologio biologico.",
+   src:[["Chang e colleghi, 2015: studio controllato su 12 persone.","warn"]],
+   when:"Ogni sera."},
+  {id:"esperimento", group:"Sperimentare", name:"Esperimento di 2 settimane", dur:"14 giorni", exp:true,
+   steps:["Scegli un solo esercizio.","Praticalo ogni giorno per 2 settimane.","Ogni sera segna energia e tensione nel Diario.","Confronta con le 2 settimane precedenti."],
+   why:"È un'idea progettuale basata sul principio di misurare su di sé. Non è un risultato scientifico.",
+   src:[["Ipotesi da verificare con i pilota in azienda.","hyp"]],
+   when:"Quando vuoi capire cosa funziona per te."}
+];
+const EVLABEL = {good:"Prove buone", warn:"Indizi", hyp:"Ipotesi"};
+const byId = Object.fromEntries(EX.map(x=>[x.id,x]));
+function evLevels(x){ return [...new Set(x.src.map(s=>s[1]))]; }
+function evPills(x){ return evLevels(x).map(l=>`<span class="ev ${l}">${EVLABEL[l]}</span>`).join(" "); }
+
+// ---------- Stato salvato (solo su questo dispositivo) ----------
+const KEY = "pitstop.v1";
+const iso = d => d.toISOString().slice(0,10);
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+function exampleData(){
+  const today = new Date(); const days = [];
+  // Numeri inventati, deterministici, solo per mostrare il diario
+  const eA=[5,4,5,4,6,5,4,5,4,5,5,4,5,4], tA=[6,7,6,7,5,6,7,6,7,6,6,7,6,6];
+  const eB=[5,6,5,6,6,7,6,6,7,6,7,6,7,7], tB=[6,5,5,6,5,4,5,5,4,5,4,5,4,4];
+  for(let i=0;i<28;i++){
+    const d = iso(addDays(today, i-27));
+    days.push({d, e: i<14?eA[i]:eB[i-14], t: i<14?tA[i]:tB[i-14]});
+  }
+  const sessions=[{ex:"respiro",pe:4,pt:7,ae:5,at:5},{ex:"pausa",pe:3,pt:5,ae:5,at:4},{ex:"luce",pe:4,pt:4,ae:6,at:3},{ex:"respiro",pe:5,pt:8,ae:5,at:6},{ex:"muovi",pe:3,pt:5,ae:6,at:4}]
+    .map((s,i)=>({...s, d: iso(addDays(today,-(i*3)))}));
+  return {example:true, days, sessions, exp:{ex:"respiro", start: iso(addDays(today,-13))}};
+}
+let S;
+function load(){ try{ const raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); return; } }catch(e){} S = exampleData(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+load();
+
+// ---------- Utilità ----------
+const $ = id => document.getElementById(id);
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._h); toast._h=setTimeout(()=>t.hidden=true,2400); }
+function bindGauge(inp,out){ const f=()=>$(out).textContent=$(inp).value; $(inp).addEventListener("input",f); f(); }
+["e:eVal","t:tVal","de:deVal","dt:dtVal","pe:peVal","pt:ptVal"].forEach(p=>{const [a,b]=p.split(":");bindGauge(a,b);});
+const fmt = n => (Math.round(n*10)/10).toLocaleString("it-IT",{minimumFractionDigits:1,maximumFractionDigits:1});
+
+// ---------- Schede ----------
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
+function showView(v){
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected", b.dataset.view===v));
+  document.querySelectorAll("section.view").forEach(s=>s.hidden = s.id!=="view-"+v);
+  if(v==="diario") renderDiary();
+  window.scrollTo(0,0);
+}
+
+// ---------- Elenco esercizi ----------
+function cardHTML(x, cls=""){
+  return `<button class="card ${cls}" data-ex="${x.id}">
+    <span><b>${x.name}</b></span><span class="go" aria-hidden="true">›</span>
+    <span class="meta">${x.dur}${x.team?" · in gruppo":""} · ${evPills(x)}</span></button>`;
+}
+function renderAll(){
+  let html="", g="";
+  EX.forEach(x=>{ if(x.group!==g){ g=x.group; html+=`<div class="group-h">${g}</div>`; } html+=cardHTML(x); });
+  $("allCards").innerHTML = html;
+}
+renderAll();
+document.addEventListener("click",e=>{ const c=e.target.closest("[data-ex]"); if(c) openSession(c.dataset.ex); });
+
+// ---------- Suggerimento ----------
+let pre = null;
+$("suggestBtn").addEventListener("click",()=>{
+  const e=+$("e").value, t=+$("t").value, heavy=$("heavy").checked, team=$("team").checked, morning=new Date().getHours()<12;
+  pre={e,t};
+  let ids, reason;
+  if(t>=6){ ids=["respiro","sospiro","pausa"]; reason="La tensione è alta: prima conviene calmare il corpo."; }
+  else if(e<=4){ ids = morning?["luce","muovi","pausa"]:["muovi","pausa","luce"]; reason="L'energia è bassa: serve ricaricare, meglio muovendosi o uscendo alla luce."; }
+  else { ids=["pausa","muovi","respiro"]; reason="Stai abbastanza bene: una pausa vera aiuta a mantenere l'energia."; }
+  if(team) ids=[ids[0], t>=6?"ritmo":"ridere", ids[1]];
+  let extra="";
+  if(heavy) extra+=`<p class="note">Dopo un lavoro molto impegnativo una micro-pausa da pochi minuti può non bastare: se puoi, prenditi più di 10 minuti (Albulescu 2022).</p>`;
+  if(t>=8) extra+=`<p class="muted small">Se ti senti così spesso, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>`;
+  const box=$("suggestion");
+  box.innerHTML = `<h2>Ti propongo</h2><p class="muted">${reason}</p>
+    <div class="cards">${ids.map((id,i)=>cardHTML(byId[id], i===0?"top":"")).join("")}</div>${extra}
+    <p class="muted small">Il suggerimento segue regole semplici, non è una diagnosi.</p>`;
+  box.hidden=false; $("dueAlert").hidden=true;
+  box.scrollIntoView({behavior:"smooth",block:"start"});
+});
+
+// ---------- Promemoria ----------
+let remaining = 60*60, running=false, tick=null;
+function setIntervalLen(){ remaining = (+$("interval").value)*60; drawTimer(); }
+function drawTimer(){
+  const tot=(+$("interval").value)*60, m=Math.floor(remaining/60), s=remaining%60;
+  $("countdown").textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  $("ring").setAttribute("stroke-dashoffset", (226.2*(1-remaining/tot)).toFixed(1));
+}
+$("interval").addEventListener("change",setIntervalLen);
+$("timerToggle").addEventListener("click",()=>{
+  running=!running; $("timerToggle").textContent = running?"Ferma":"Avvia";
+  if(running){ tick=setInterval(()=>{ remaining--; if(remaining<=0){ due(); remaining=(+$("interval").value)*60; } drawTimer(); },1000); }
+  else clearInterval(tick);
+});
+let audio=null;
+$("sound").addEventListener("change",()=>{ if($("sound").checked && !audio){ try{ audio=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } });
+function beep(){
+  if(!$("sound").checked||!audio) return;
+  try{ [0,0.35].forEach(dt=>{ const o=audio.createOscillator(), g=audio.createGain(); o.frequency.value=660; g.gain.setValueAtTime(.0001,audio.currentTime+dt);
+    g.gain.exponentialRampToValueAtTime(.2,audio.currentTime+dt+.02); g.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+dt+.3);
+    o.connect(g).connect(audio.destination); o.start(audio.currentTime+dt); o.stop(audio.currentTime+dt+.32); }); }catch(e){}
+}
+let due; due = function(){ showView("adesso"); $("dueAlert").hidden=false; $("suggestion").hidden=true; beep(); $("checkin").scrollIntoView({behavior:"smooth"}); };
+drawTimer();
+
+// ---------- Schermata esercizio ----------
+let cur=null, runTimer=null;
+function openSession(id){
+  const x=byId[id]; cur=x; stopRun();
+  $("sxGroup").textContent=x.group; $("sxTitle").textContent=x.name;
+  $("sxMeta").innerHTML=`<span class="muted small">${x.dur}${x.team?" · in gruppo":""}</span> ${evPills(x)}`;
+  $("sxSteps").innerHTML=x.steps.map(s=>`<li>${s}</li>`).join("");
+  $("sxWhy").innerHTML=`<p>${x.why}</p>`+x.src.map(s=>`<p class="why"><span class="ev ${s[1]}">${EVLABEL[s[1]]}</span> ${s[0]}</p>`).join("")+`<p class="why">Quando: ${x.when}</p>`;
+  $("sxAfter").hidden=true;
+  const run=$("sxRun");
+  if(x.mins){
+    run.innerHTML=`<div class="row"><label for="sxMin" class="small">Durata</label>
+      <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select>
+      <button class="btn primary" id="sxStart">Inizia</button><button class="btn ghost" id="sxDone">Ho finito</button></div>
+      <div class="breath" id="sxStage" hidden>${x.breath?`<div class="orb" id="orb"></div>`:""}<div class="phase num" id="phase"></div><div class="bar"><i id="prog"></i></div></div>`;
+    $("sxStart").onclick=()=>startRun(x, +$("sxMin").value*60);
+    $("sxDone").onclick=finish;
+  } else if(x.habit==="caffe"){
+    run.innerHTML=`<div class="panel"><label for="bed">A che ora vai a dormire?</label><input type="time" id="bed" value="23:00" style="font:inherit;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg)">
+      <p id="lastCoffee" class="num"></p></div>`;
+    const upd=()=>{ const [h,m]=($("bed").value||"23:00").split(":").map(Number); const t=((h-6+24)%24); $("lastCoffee").innerHTML=`Ultimo caffè entro le <b>${String(t).padStart(2,"0")}:${String(m).padStart(2,"0")}</b>.`; };
+    $("bed").addEventListener("input",upd); upd();
+  } else if(x.exp){
+    run.innerHTML=`<div class="panel"><label for="expSel">Quale esercizio vuoi provare?</label>
+      <select id="expSel">${EX.filter(e=>e.mins).map(e=>`<option value="${e.id}">${e.name}</option>`).join("")}</select>
+      <button class="btn primary" id="expGo">Inizia l'esperimento oggi</button></div>`;
+    $("expGo").onclick=()=>{ S.exp={ex:$("expSel").value,start:iso(new Date())}; save(); closeSession(); showView("diario"); toast("Esperimento avviato"); };
+  } else run.innerHTML="";
+  $("session").hidden=false; document.body.style.overflow="hidden"; $("sxClose").focus();
+}
+function startRun(x, secs){
+  stopRun(); $("sxStage").hidden=false; $("sxStart").disabled=true;
+  const t0=performance.now(), total=secs*1000;
+  const orb=$("orb");
+  if(x.breath){
+    let i=0;
+    const step=()=>{ const p=x.breath[i%x.breath.length]; if(orb){ orb.style.transitionDuration=p.s+"s"; orb.style.transform=`scale(${p.sc})`; }
+      let left=Math.ceil(p.s); $("phase").textContent=`${p.l} · ${left}`;
+      const cd=setInterval(()=>{ left--; if(left>0) $("phase").textContent=`${p.l} · ${left}`; },1000);
+      runTimer.sub=setTimeout(()=>{ clearInterval(cd); i++; if(performance.now()-t0<total) step(); },p.s*1000);
+      runTimer.cd=cd; };
+    runTimer={}; step();
+  } else { runTimer={}; }
+  runTimer.prog=setInterval(()=>{ const el=performance.now()-t0, f=Math.min(1,el/total); $("prog").style.width=(f*100)+"%";
+    if(!x.breath){ const r=Math.max(0,Math.ceil((total-el)/1000)); $("phase").textContent=`${Math.floor(r/60)}:${String(r%60).padStart(2,"0")}`; }
+    if(f>=1){ finish(); } },250);
+}
+function stopRun(){ if(runTimer){ clearTimeout(runTimer.sub); clearInterval(runTimer.cd); clearInterval(runTimer.prog); runTimer=null; } }
+function finish(){
+  stopRun(); if($("phase")) $("phase").textContent="Fatto";
+  if(cur && cur.breath && $("orb")) $("orb").style.transform="scale(.55)";
+  const p=pre||{e:+$("e").value,t:+$("t").value};
+  $("pe").value=p.e; $("pt").value=p.t; $("peVal").textContent=p.e; $("ptVal").textContent=p.t;
+  $("sxAfter").hidden=false; $("sxAfter").scrollIntoView({behavior:"smooth"});
+}
+$("sxSave").addEventListener("click",()=>{
+  const p=pre||{e:+$("e").value,t:+$("t").value};
+  if(S.example) clearExamples(true);
+  S.sessions.unshift({ex:cur.id,d:iso(new Date()),pe:p.e,pt:p.t,ae:+$("pe").value,at:+$("pt").value}); save();
+  pre=null; closeSession(); toast("Pausa salvata nel diario");
+});
+function closeSession(){ stopRun(); $("session").hidden=true; document.body.style.overflow=""; }
+$("sxClose").addEventListener("click",closeSession);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("session").hidden) closeSession(); });
+
+// ---------- Diario ----------
+function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
+$("clearExamples").addEventListener("click",()=>clearExamples(false));
+$("saveDay").addEventListener("click",()=>{
+  if(S.example) clearExamples(true);
+  const d=iso(new Date()); S.days=S.days.filter(x=>x.d!==d); S.days.push({d,e:+$("de").value,t:+$("dt").value});
+  S.days.sort((a,b)=>a.d<b.d?-1:1); save(); renderDiary(); toast("Giornata salvata");
+});
+const avg = a => a.reduce((s,v)=>s+v,0)/a.length;
+function renderDiary(){
+  $("exampleNote").hidden=!S.example;
+  const ss=S.sessions; $("sCount").textContent=ss.length;
+  $("sDE").textContent = ss.length? `${fmt(avg(ss.map(s=>s.pe)))} → ${fmt(avg(ss.map(s=>s.ae)))}` : "–";
+  $("sDT").textContent = ss.length? `${fmt(avg(ss.map(s=>s.pt)))} → ${fmt(avg(ss.map(s=>s.at)))}` : "–";
+  // Esperimento
+  const box=$("expBox");
+  if(!S.exp){ box.innerHTML=`<p class="muted">Nessun esperimento in corso. Aprilo dalla scheda "Esperimento di 2 settimane" negli Esercizi.</p>`; }
+  else{
+    const before=S.days.filter(x=>x.d<S.exp.start).slice(-14), after=S.days.filter(x=>x.d>=S.exp.start);
+    const name=byId[S.exp.ex]?.name||S.exp.ex;
+    let res;
+    if(before.length<5||after.length<5) res=`<p class="muted small">Servono almeno 5 giorni registrati prima e 5 dopo l'inizio. Ora ne hai ${before.length} prima e ${after.length} dopo.</p>`;
+    else res=`<div class="stats" style="grid-template-columns:repeat(2,1fr)">
+      <div class="stat"><b class="num">${fmt(avg(before.map(x=>x.e)))} → ${fmt(avg(after.map(x=>x.e)))}</b><span>energia a fine giornata, prima → durante</span></div>
+      <div class="stat"><b class="num">${fmt(avg(before.map(x=>x.t)))} → ${fmt(avg(after.map(x=>x.t)))}</b><span>tensione a fine giornata, prima → durante</span></div></div>
+      <p class="muted small">Un confronto su di te, senza gruppo di controllo: anche il periodo dell'anno o il carico di lavoro possono spiegare la differenza.</p>`;
+    box.innerHTML=`<p>In prova: <b>${name}</b>, dal ${new Date(S.exp.start).toLocaleDateString("it-IT",{day:"numeric",month:"long"})}.</p>${res}`;
+  }
+  drawChart();
+}
+function drawChart(){
+  const host=$("chart"), days=S.days;
+  if(days.length<2){ host.innerHTML=`<p class="muted small">Il grafico compare dopo due giornate salvate.</p>`; $("dayTable").innerHTML=""; return; }
+  const W=520,H=220,L=28,R=10,T=12,B=26;
+  const d0=new Date(days[0].d), span=Math.max(1,(new Date(days[days.length-1].d)-d0)/864e5);
+  const X=d=>L+((new Date(d)-d0)/864e5)/span*(W-L-R), Y=v=>T+(10-v)/10*(H-T-B);
+  let g=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Energia e tensione a fine giornata">`;
+  [0,5,10].forEach(v=>{ g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}</text>`; });
+  const lbl=d=>new Date(d).toLocaleDateString("it-IT",{day:"numeric",month:"short"});
+  g+=`<text x="${L}" y="${H-6}" font-size="11" fill="var(--muted)">${lbl(days[0].d)}</text><text x="${W-R}" y="${H-6}" font-size="11" fill="var(--muted)" text-anchor="end">${lbl(days[days.length-1].d)}</text>`;
+  if(S.exp && S.exp.start>=days[0].d && S.exp.start<=days[days.length-1].d){ const x=X(S.exp.start); g+=`<line x1="${x}" x2="${x}" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 3"/>`; }
+  const path=k=>days.map((p,i)=>`${i?"L":"M"}${X(p.d).toFixed(1)},${Y(p[k]).toFixed(1)}`).join("");
+  g+=`<path d="${path("e")}" fill="none" stroke="var(--energy)" stroke-width="2" stroke-linejoin="round"/>`;
+  g+=`<path d="${path("t")}" fill="none" stroke="var(--tension)" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round"/>`;
+  g+=`<line id="guide" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>`;
+  g+=`<rect id="hit" x="${L}" y="0" width="${W-L-R}" height="${H}" fill="transparent"/></svg><div class="tip" id="tip" hidden></div>`;
+  host.innerHTML=g;
+  const svg=host.querySelector("svg"), tip=$("tip"), guide=$("guide");
+  const move=ev=>{ const r=svg.getBoundingClientRect(), sx=(ev.clientX-r.left)/r.width*W;
+    let best=days[0]; days.forEach(p=>{ if(Math.abs(X(p.d)-sx)<Math.abs(X(best.d)-sx)) best=p; });
+    const x=X(best.d); guide.setAttribute("x1",x); guide.setAttribute("x2",x); guide.setAttribute("visibility","visible");
+    tip.hidden=false; tip.style.left=(x/W*r.width)+"px"; tip.style.top=(Y(Math.max(best.e,best.t))/H*r.height)+"px";
+    tip.textContent=`${lbl(best.d)} · energia ${best.e} · tensione ${best.t}`; };
+  svg.addEventListener("pointermove",move); svg.addEventListener("pointerleave",()=>{ tip.hidden=true; guide.setAttribute("visibility","hidden"); });
+  $("dayTable").innerHTML=`<table><thead><tr><th>Giorno</th><th class="n">Energia</th><th class="n">Tensione</th></tr></thead><tbody>${
+    days.slice().reverse().map(p=>`<tr><td>${lbl(p.d)}${S.exp&&p.d===S.exp.start?" · inizio":""}</td><td class="n">${p.e}</td><td class="n">${p.t}</td></tr>`).join("")}</tbody></table>`;
+}
+
+// ---------- Versione installabile: notifiche e funzionamento offline ----------
+$("notif").addEventListener("change",async()=>{
+  if(!$("notif").checked) return;
+  if(!("Notification" in window)){ toast("Questo browser non supporta le notifiche"); $("notif").checked=false; return; }
+  const p = await Notification.requestPermission();
+  if(p!=="granted"){ toast("Notifiche non consentite"); $("notif").checked=false; }
+});
+const _due = due;
+due = function(){ _due(); if($("notif").checked && "Notification" in window && Notification.permission==="granted"){
+  navigator.serviceWorker?.ready.then(r=>r.showNotification("È ora di un pit stop",{body:"Dimmi come stai e ti propongo l'esercizio adatto.",icon:"icon-192.png",tag:"pitstop"}))
+  .catch(()=>{ try{ new Notification("È ora di un pit stop"); }catch(e){} }); } };
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
