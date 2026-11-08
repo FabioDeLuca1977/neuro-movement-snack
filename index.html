@@ -18,7 +18,7 @@
 :root{
   --bg:#eef3f1; --surface:#ffffff; --sunk:#e1eae7; --line:#c9d6d2;
   --fg:#13282c; --muted:#4f6468; --accent:#1f6f62; --accent-ink:#ffffff; --accent-soft:#d3ebe5;
-  --energy:#2a78d6; --tension:#eb6834;
+  --energy:#2a78d6; --tension:#eb6834; --pain:#1baf7a;
   --good:#1b7a4c; --good-soft:#dcefe3; --warn:#9a6400; --warn-soft:#f6ead2; --hyp:#6a4fa3; --hyp-soft:#ebe4f6;
   --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
@@ -26,13 +26,13 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0f1b1d; --surface:#172729; --sunk:#0b1416; --line:#2c4144;
   --fg:#e3eeec; --muted:#9fb4b6; --accent:#5cc2ad; --accent-ink:#06201b; --accent-soft:#1d3d38;
-  --energy:#3987e5; --tension:#d95926;
+  --energy:#3987e5; --tension:#d95926; --pain:#199e70;
   --good:#6fd39e; --good-soft:#173527; --warn:#e5b04f; --warn-soft:#3a2d12; --hyp:#b9a2ea; --hyp-soft:#2c2442;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0f1b1d; --surface:#172729; --sunk:#0b1416; --line:#2c4144;
   --fg:#e3eeec; --muted:#9fb4b6; --accent:#5cc2ad; --accent-ink:#06201b; --accent-soft:#1d3d38;
-  --energy:#3987e5; --tension:#d95926;
+  --energy:#3987e5; --tension:#d95926; --pain:#199e70;
   --good:#6fd39e; --good-soft:#173527; --warn:#e5b04f; --warn-soft:#3a2d12; --hyp:#b9a2ea; --hyp-soft:#2c2442;
   color-scheme:dark}
 
@@ -78,6 +78,7 @@ button,.btn{font:inherit;cursor:pointer}
 .gauge input[type=range]{width:100%}
 .gauge.energy input{accent-color:var(--energy)}
 .gauge.tension input{accent-color:var(--tension)}
+.gauge.pain input{accent-color:var(--pain)}
 .scale{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted)}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:.95rem}
 .check input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent)}
@@ -109,6 +110,11 @@ select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--lin
 .ev.warn::before{border-radius:50%}
 .ev.hyp{background:var(--hyp-soft);color:var(--hyp)}
 .ev.hyp::before{transform:rotate(45deg)}
+.tag{display:inline-flex;align-items:center;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:1px 8px;margin-right:4px;white-space:nowrap;color:var(--muted)}
+.tag.l2{border-color:var(--warn);color:var(--warn);font-weight:700}
+.meta .tag,.meta .ev{margin-top:4px}
+.say{border-left:3px solid var(--good);padding-left:10px}
+.nosay{border-left:3px solid var(--tension);padding-left:10px}
 
 /* Schermata esercizio */
 #session{position:fixed;inset:0;z-index:20;background:var(--bg);overflow-y:auto;
@@ -194,7 +200,8 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 
       <div class="alert" id="dueAlert" hidden>
         <h3>È ora di un pit stop</h3>
-        <p>Dimmi come stai e ti propongo l'esercizio adatto.</p>
+        <p>Fai la micro-pausa da 3 minuti, il protocollo studiato per chi lavora in ufficio. Oppure dimmi come stai e ti propongo l'esercizio adatto.</p>
+        <div class="row"><button class="btn primary" data-ex="micro3">Micro-pausa da 3 minuti</button></div>
       </div>
 
       <div class="panel" id="checkin">
@@ -209,6 +216,10 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
           <input type="range" id="t" min="0" max="10" value="5">
           <div class="scale"><span>0 calmo</span><span>10 molto teso</span></div>
         </div>
+        <label class="check"><input type="checkbox" id="stress"> Ho appena vissuto un momento stressante</label>
+        <label class="check"><input type="checkbox" id="neck"> Mi fanno male collo o spalle</label>
+        <label class="check"><input type="checkbox" id="meal"> Ho mangiato da poco</label>
+        <label class="check"><input type="checkbox" id="seated"> Sono in riunione e non posso alzarmi</label>
         <label class="check"><input type="checkbox" id="heavy"> Ho appena finito un lavoro molto impegnativo</label>
         <label class="check"><input type="checkbox" id="team"> Sono con il mio gruppo</label>
         <button class="btn primary" id="suggestBtn">Proponi una pausa</button>
@@ -219,7 +230,7 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 
     <!-- ESERCIZI -->
     <section class="view" id="view-esercizi" hidden>
-      <p class="muted">Dieci pratiche brevi. Ognuna dichiara su quali studi si basa e quanto sono solide le prove.</p>
+      <p class="muted">Gli esercizi di Movement Snack (MS) e Pit Stop (PS) in un'unica mappa. Ognuno dichiara la direzione, quanto è vicino al protocollo studiato (grado P, A, E) e quanto sono solide le prove. Gli esercizi di livello 2 sono intensi: non vengono mai suggeriti, li scegli tu.</p>
       <div class="cards" id="allCards"></div>
     </section>
 
@@ -252,6 +263,10 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
           <div class="lbl"><label for="dt">Tensione</label><b class="num" id="dtVal">5</b></div>
           <input type="range" id="dt" min="0" max="10" value="5">
         </div>
+        <div class="gauge pain">
+          <div class="lbl"><label for="dp">Dolore a collo e spalle</label><b class="num" id="dpVal">0</b></div>
+          <input type="range" id="dp" min="0" max="10" value="0">
+        </div>
         <button class="btn primary" id="saveDay">Salva oggi</button>
       </div>
 
@@ -262,6 +277,7 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
         <div class="legend" aria-hidden="true">
           <span><svg viewBox="0 0 24 8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--energy)" stroke-width="2"/></svg>Energia</span>
           <span><svg viewBox="0 0 24 8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--tension)" stroke-width="2" stroke-dasharray="5 3"/></svg>Tensione</span>
+          <span><svg viewBox="0 0 24 8"><line x1="0" y1="4" x2="24" y2="4" stroke="var(--pain)" stroke-width="2" stroke-dasharray="1.5 3" stroke-linecap="round"/></svg>Dolore collo e spalle</span>
           <span><svg viewBox="0 0 24 8"><line x1="12" y1="0" x2="12" y2="8" stroke="var(--muted)" stroke-width="2" stroke-dasharray="2 2"/></svg>Inizio esperimento</span>
         </div>
         <details>
@@ -280,6 +296,17 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
           <li><span class="ev warn">Indizi</span> studi piccoli o non ancora confermati.</li>
           <li><span class="ev hyp">Ipotesi</span> idea progettuale da verificare.</li>
         </ul>
+        <p class="small">Il <b>grado</b> dice un'altra cosa: quanto l'esercizio è vicino a ciò che è stato studiato.</p>
+        <ul class="plain small">
+          <li><span class="tag">Grado P</span> protocollo studiato: dose e struttura vengono da un trial.</li>
+          <li><span class="tag">Grado A</span> adattato da un protocollo: la fonte esiste, qualcosa è stato reso operativo.</li>
+          <li><span class="tag">Grado E</span> esperienziale: nessun esito misurato, si descrive l'azione e non l'effetto.</li>
+        </ul>
+        <p class="small"><span class="tag">Calmare</span><span class="tag">Attivare</span><span class="tag">Neutra</span> indicano in quale stato proporre l'esercizio. <span class="tag l2">Livello 2</span> significa intensità elevata: solo se lo scegli tu, con il via libera dell'azienda e, dove c'è, del medico competente.</p>
+      </div>
+      <div class="panel">
+        <h2>Pause e produttività</h2>
+        <p>La produttività non peggiora. In un trial di 12 settimane quella percepita è migliorata di 1,3 punti su 10 (BMC Public Health 2026). La prestazione oggettiva nei compiti impegnativi non è dimostrata (Albulescu 2022).</p>
       </div>
       <div class="panel">
         <h2>Cosa non promettiamo</h2>
@@ -287,7 +314,9 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
           <li>Niente "detox di dopamina" o "reset del cervello".</li>
           <li>Niente docce fredde "per la resilienza": la noradrenalina sale, ma i benefici non sono stati misurati.</li>
           <li>Niente integratori di GABA, 5-HTP o triptofano. Il 5-HTP insieme agli antidepressivi è anche rischioso.</li>
-          <li>Niente "più produttività del X%": le micro-pause riducono la fatica, ma non migliorano in modo dimostrato la prestazione nei compiti impegnativi.</li>
+          <li>Niente "più produttività del X%".</li>
+          <li>Niente perdita di peso, colesterolo più basso o gambe più forti: su questi esiti le prove sono contraddittorie o assenti.</li>
+          <li>Niente "rilascia endorfine" o "produce serotonina".</li>
           <li>Un esercizio non "produce" una molecola: cambia le condizioni, non dosa sostanze.</li>
         </ul>
       </div>
@@ -295,6 +324,10 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
         <h2>Due studi alla base del progetto</h2>
         <p><b>Albulescu e colleghi, 2022</b> (PLOS ONE). Meta-analisi su 22 campioni e 2.335 persone: le micro-pause fino a 10 minuti aumentano il vigore e riducono la fatica, con effetti piccoli. Dopo un lavoro molto pesante servono pause più lunghe.</p>
         <p><b>Fleming, 2024</b> (Industrial Relations Journal). 46.336 lavoratori: chi partecipa a interventi solo individuali non sta meglio degli altri. Per questo Pit Stop prevede anche regole di squadra e il sostegno dell'organizzazione.</p>
+      </div>
+      <div class="panel">
+        <h2>Da dove vengono gli esercizi</h2>
+        <p>Le schede MS vengono dal <i>Catalogo dei protocolli</i> di Movement Snack (Centro del Loto · Maieutike, v1.0, luglio 2026), dove ogni fonte è verificata. Le schede PS vengono dal progetto Pit Stop. Le schede di Movement Snack ancora da compilare (4.3, 5.3, 6.2) non sono incluse.</p>
       </div>
       <div class="panel">
         <h2>Privacy e limiti</h2>
@@ -315,8 +348,9 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
     <div class="row" id="sxMeta"></div>
     <ol class="steps" id="sxSteps"></ol>
     <div id="sxRun"></div>
+    <p class="note" id="sxL2" hidden>Intensità elevata (livello 2). Fallo solo se lo scegli tu, se ti senti bene e se l'azienda e, dove presente, il medico competente hanno dato il via libera.</p>
     <details class="src" open>
-      <summary>Perché funziona</summary>
+      <summary>Studi e cosa si può dire</summary>
       <div id="sxWhy" style="display:grid;gap:8px;margin-top:8px"></div>
     </details>
     <div class="panel" id="sxAfter" hidden>
@@ -337,68 +371,171 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 <div class="toast" id="toast" hidden></div>
 
 <script>
-// ---------- Contenuti: solo studi verificati nel documento "Neuro Snack - progetto" ----------
+// ---------- Contenuti: mappa unica Pit Stop + Movement Snack (vedi "Mappa studi-esercizi") ----------
+// dir = direzione · lvl = livello di intensità · grade = P/A/E (catalogo Movement Snack) · src = [studio, forza della prova]
 const EX = [
-  {id:"respiro", group:"Calmare", name:"Respiro a 6", dur:"3–5 min", mins:[3,5],
-   steps:["Inspira per 4 secondi.","Espira per 6 secondi.","Sono circa 6 respiri al minuto: segui il cerchio."],
+  // CALMARE
+  {id:"respiro", code:"MS 4.1 · PS", group:"Calmare", dir:"Calmare", lvl:1, grade:"P", name:"Respiro lento", dur:"1–5 min", mins:[1,3,5],
+   steps:["Seduti o in piedi, respiro dal naso.","Inspira per 4 secondi, espira per 6.","Nessuno sforzo, nessuna apnea. Segui il cerchio."],
    breath:[{l:"Inspira",s:4,sc:1},{l:"Espira",s:6,sc:.55}],
-   why:"Respirare sotto i 10 respiri al minuto aumenta la variabilità cardiaca; negli studi calano ansia e attivazione.",
-   src:[["Zaccaro e colleghi, 2018: revisione di 15 studi sul respiro lento.","good"],["Goessl e colleghi, 2017: 24 studi con biofeedback della variabilità cardiaca, effetto ampio (0,83) sullo stress riferito. Con il biofeedback, non con il solo respiro.","warn"]],
-   when:"Prima di una riunione difficile, dopo una telefonata tesa."},
-  {id:"sospiro", group:"Calmare", name:"Sospiro ciclico", dur:"5 min", mins:[5],
-   steps:["Inspira dal naso.","Aggiungi una seconda inspirazione breve, per riempire i polmoni.","Espira lentamente dalla bocca, più a lungo dell'inspirazione.","Il ritmo del cerchio è indicativo: adattalo a te."],
+   dose:"Circa 4,5–7 respiri al minuto. 1 minuto = 6 cicli; 3 minuti = pratica completa.",
+   say:"Aumenta la variabilità cardiaca e favorisce l'attività vagale: è il modo più documentato per abbassare l'attivazione.",
+   nosay:"«Abbassa il cortisolo», «riequilibra le energie».",
+   src:[["Revisione sistematica con meta-analisi su respiro lento, frequenza cardiaca e HRV. Neuroscience & Biobehavioral Reviews, 2022.","good"],["Zaccaro e colleghi, 2018: revisione di 15 studi sul respiro lento.","good"]],
+   when:"Dopo una riunione difficile, una telefonata tesa, una scadenza."},
+  {id:"guidato", code:"MS 4.2", group:"Calmare", dir:"Calmare", lvl:1, grade:"A", name:"Respiro guidato dopo un momento stressante", dur:"3–5 min", mins:[3,5],
+   steps:["Fallo subito dopo l'evento, non ore dopo.","Segui il cerchio: la guida esterna fa parte del protocollo.","Inspira 4 secondi, espira 6."],
+   breath:[{l:"Inspira",s:4,sc:1},{l:"Espira",s:6,sc:.55}],
+   dose:"3–5 minuti subito dopo l'evento.",
+   say:"Recupera meglio del riposo passivo ed è giudicato più piacevole. È la risposta a chi dice «mi riposo e basta».",
+   nosay:"«Abbassa il cortisolo».",
+   src:[["Studio sulla respirazione ritmica guidata dopo uno stressor (RMSSD e gradimento). Scientific Reports, 2025. DOI 10.1038/s41598-025-24813-y.","warn"]],
+   when:"Subito dopo un confronto difficile."},
+  {id:"sospiro", code:"PS", group:"Calmare", dir:"Calmare", lvl:1, grade:"P", name:"Sospiro ciclico", dur:"5 min", mins:[5],
+   steps:["Inspira dal naso.","Aggiungi una seconda inspirazione breve, per riempire i polmoni.","Espira lentamente dalla bocca, più a lungo.","Il ritmo del cerchio è indicativo: adattalo a te."],
    breath:[{l:"Inspira dal naso",s:2.5,sc:.95},{l:"Ancora un piccolo respiro",s:1,sc:1.05},{l:"Espira dalla bocca",s:6,sc:.55}],
-   why:"In uno studio di un mese ha migliorato l'umore più della meditazione mindfulness.",
-   src:[["Balban e colleghi, 2023 (Cell Reports Medicine). Non c'era un gruppo senza trattamento, quindi l'effetto va confermato.","warn"]],
+   dose:"5 minuti al giorno per un mese.",
+   say:"In uno studio di un mese ha migliorato l'umore più della meditazione mindfulness.",
+   nosay:"Che sia dimostrato: mancava un gruppo senza trattamento.",
+   src:[["Balban e colleghi, 2023. Cell Reports Medicine.","warn"]],
    when:"Come rituale quotidiano, per esempio a fine giornata."},
-  {id:"pausa", group:"Ricaricare", name:"Pausa vera", dur:"fino a 10 min", mins:[5,10],
+  // ATTIVARE
+  {id:"micro3", code:"MS 3.4", group:"Attivare", dir:"Attivare", lvl:1, grade:"P", name:"Micro-pausa da 3 minuti", dur:"3 min ogni ora", mins:[3],
+   steps:["Sei esercizi da 30 secondi, in quest'ordine: la marcia apre, non chiude.","Marcia sul posto · push-up alla scrivania o al muro · squat con sedia · alzate sui talloni · circonduzioni di braccia e spalle · torsioni leggere del busto."],
+   seq:[{l:"Marcia sul posto",s:30},{l:"Push-up alla scrivania o al muro",s:30},{l:"Squat con la sedia",s:30},{l:"Alzate sui talloni",s:30},{l:"Circonduzioni di braccia e spalle",s:30},{l:"Torsioni leggere del busto",s:30}],
+   dose:"3 minuti ogni ora dalle 9 alle 17, sette pause al giorno, per 12 settimane. Sotto i 3 minuti o con meno frequenza si esce dal protocollo.",
+   say:"È l'unico RCT su lavoratori d'ufficio a 12 settimane: migliorano glicemia e HOMA-IR, l'aderenza resta all'82% e la produttività percepita migliora (+1,3 su 10).",
+   nosay:"Effetti su collo e spalle (nessuna differenza nello studio); dati su peso e colesterolo. Riserve: studio monocentrico, campione in media sovrappeso.",
+   src:[["Micro-exercise breaks every hour. BMC Public Health 2026;26:763. DOI 10.1186/s12889-026-26484-4.","good"]],
+   when:"È il protocollo del promemoria orario."},
+  {id:"cammino", code:"MS 3.1 · PS", group:"Attivare", dir:"Attivare (leggero)", lvl:1, grade:"P", name:"Cammino breve", dur:"2–5 min", mins:[2,5],
+   steps:["Cammina a passo da leggero a moderato.","Nessuna attrezzatura, nessun cambio d'abito."],
+   dose:"Studiato: 2 minuti ogni 20 minuti. In ufficio: 2 minuti ogni 30 minuti nel pomeriggio.",
+   say:"Pochi minuti di cammino ripetuti migliorano la risposta all'insulina dopo i pasti, con certezza moderata.",
+   nosay:"«Fa dimagrire», «abbassa il colesterolo».",
+   src:[["Dunstan e colleghi, 2012. Diabetes Care 35:976-983.","good"],["Meta-analisi «Every Move Counts», PMID 41629846.","good"]],
+   when:"Dopo pranzo, nelle sedute lunghe."},
+  {id:"activity", code:"MS 1.2 · PS", group:"Attivare", dir:"Attivare", lvl:1, grade:"A", name:"Squat o cammino", dur:"1–5 min", mins:[1,3,5],
+   steps:["Squat a corpo libero a ritmo controllato, oppure cammino a passo sostenuto.","Variante: alzarsi e sedersi dalla propria sedia."],
+   dose:"1 minuto = 15 squat lenti; 3 minuti = 3 serie da 20 secondi con 20 secondi di pausa.",
+   say:"Anche squat o cammino producono un effetto misurabile durante una seduta prolungata.",
+   nosay:"«Costruisce muscolo»: lo studio misura la sintesi proteica, non la crescita muscolare.",
+   src:[["Moore e colleghi, 2022. J Appl Physiol 133:777-785.","warn"]],
+   when:"Quando ti senti intorpidito e non hai scale vicine."},
+  {id:"corpo", code:"MS 3.2", group:"Attivare", dir:"Attivare (leggero)", lvl:1, grade:"P/A", name:"Esercizi alla scrivania", dur:"3 min", mins:[3],
+   steps:["In piedi accanto alla scrivania.","Alzati e siediti dalla sedia, sollevati sui talloni, fai mezzo squat.","Ritmo controllato, senza affanno."],
+   dose:"3 minuti ogni 30–60 minuti.",
+   say:"Sulla glicemia hanno lo stesso effetto del cammino.",
+   nosay:"I dati su trigliceridi e C-peptide riguardano persone con diabete tipo 2.",
+   src:[["ACSM, consensus statement su esercizio e diabete tipo 2.","good"],["Meta-analisi «Every Move Counts», PMID 41629846.","good"]],
+   when:"Quando non puoi allontanarti dalla postazione."},
+  {id:"talloni", code:"MS 3.3", group:"Attivare", dir:"Attivare (molto leggero)", lvl:1, grade:"E", name:"Talloni da seduti", dur:"durante una riunione", mins:[5,10],
+   steps:["Da seduti, piedi a terra.","Solleva e abbassa i talloni di continuo, con l'avampiede appoggiato.","Ritmo lento, sostenibile a lungo. Nessuno se ne accorge."],
+   dose:"Non esiste una dose validata.",
+   say:"Meccanismo promettente, ancora da confermare. Lo proponiamo perché costa zero.",
+   nosay:"Qualsiasi effetto sulla salute.",
+   src:[["Hamilton e colleghi, 2022. iScience 25(9):104869. Studio di laboratorio.","warn"]],
+   when:"Riunioni lunghe in cui non ci si può alzare."},
+  {id:"pausa", code:"PS", group:"Attivare", dir:"Ricaricare", lvl:1, grade:"A", name:"Pausa vera", dur:"fino a 10 min", mins:[5,10],
    steps:["Stacca davvero dal compito.","Alzati, guarda fuori, scambia due parole.","Non passare a un altro schermo."],
-   why:"Le micro-pause aumentano il vigore e riducono la fatica. Gli effetti sono piccoli, e le pause più lunghe danno più beneficio.",
-   src:[["Albulescu e colleghi, 2022 (PLOS ONE): meta-analisi su 22 campioni, 2.335 persone. Nessun effetto dimostrato sulla prestazione nei compiti impegnativi.","good"]],
+   dose:"Fino a 10 minuti; dopo un lavoro molto pesante servono pause più lunghe.",
+   say:"Le micro-pause aumentano il vigore e riducono la fatica, con effetti piccoli.",
+   nosay:"Che migliorino la prestazione nei compiti impegnativi: non è dimostrato.",
+   src:[["Albulescu e colleghi, 2022. PLOS ONE 17(8): e0272460. Meta-analisi, 22 campioni, 2.335 persone.","good"]],
    when:"Ogni 60–90 minuti di lavoro concentrato."},
-  {id:"luce", group:"Ricaricare", name:"Luce fuori", dur:"10 min", mins:[10],
-   steps:["Esci all'aperto, meglio la mattina.","Niente occhiali da sole se non servono.","Puoi farla insieme alla pausa caffè."],
-   why:"La luce del mattino regola l'orologio biologico, la melatonina e il picco del cortisolo.",
-   src:[["Golden e colleghi, 2005: la luce intensa è efficace nella depressione stagionale.","good"],["Lambert e colleghi, 2002: il ricambio di serotonina è legato alle ore di sole (correlazione). L'effetto sull'umore nelle persone sane non è dimostrato direttamente.","warn"]],
+  {id:"luce", code:"PS", group:"Attivare", dir:"Ricaricare", lvl:1, grade:"E", name:"Luce fuori", dur:"10 min", mins:[10],
+   steps:["Esci all'aperto, meglio la mattina.","Puoi farla insieme alla pausa caffè."],
+   dose:"Nessun protocollo per lavoratori sani.",
+   say:"La luce del mattino regola l'orologio biologico.",
+   nosay:"Effetti sull'umore nelle persone sane: non sono dimostrati direttamente.",
+   src:[["Golden e colleghi, 2005: la luce intensa è efficace nella depressione stagionale.","good"],["Lambert e colleghi, 2002: il ricambio di serotonina è legato alle ore di sole (correlazione).","warn"]],
    when:"Soprattutto d'inverno."},
-  {id:"muovi", group:"Ricaricare", name:"Muoversi", dur:"5–10 min", mins:[5,10],
-   steps:["Camminata svelta o qualche rampa di scale.","Puoi trasformare una riunione a due in una riunione camminando."],
-   why:"Una singola seduta di esercizio alza il BDNF, una proteina legata alla plasticità del cervello. I benefici sull'umore sono dimostrati con programmi regolari, non con una singola pausa.",
-   src:[["Szuhany e colleghi, 2015: meta-analisi sul BDNF dopo l'esercizio.","good"],["Noetel e colleghi, 2024: l'esercizio regolare migliora la depressione. Non dimostra l'effetto di una singola pausa.","warn"]],
-   when:"Pausa pranzo, dopo molte ore seduti."},
-  {id:"ridere", group:"Connettere", name:"Ridere insieme", dur:"3 min", mins:[3], team:true,
-   steps:["Un momento leggero condiviso con il gruppo.","Funziona insieme ad altri, non da soli davanti a un video."],
-   why:"Durante la risata condivisa il cervello rilascia oppioidi endogeni, legati al senso di legame.",
-   src:[["Manninen e colleghi, 2017: studio con la PET su soli 12 uomini.","warn"]],
-   when:"In apertura di una riunione di squadra."},
-  {id:"ritmo", group:"Connettere", name:"Ritmo comune", dur:"3 min", mins:[3], team:true,
-   steps:["Il gruppo fa insieme un movimento o un battito ritmico, tutti allo stesso tempo.","Basta battere le mani su un ritmo semplice."],
-   why:"Muoversi in sincronia alza la soglia del dolore e il senso di legame più dello stesso movimento fatto da soli.",
-   src:[["Cohen e colleghi, 2010, e Tarr e colleghi, 2015: studi sperimentali piccoli.","warn"]],
+  {id:"scale", code:"MS 1.1 · 5.1", group:"Attivare", dir:"Attivare (intenso)", lvl:2, grade:"P", name:"Scale a passo vigoroso", dur:"1–3 min", mins:[1,3],
+   steps:["Sali 3 rampe (circa 60 gradini) a passo vigoroso.","Respiro corto ma riesci ancora a parlare.","La discesa a passo normale non conta."],
+   dose:"3 volte al giorno, separate da 1–4 ore, 3 giorni a settimana. Per l'effetto sulla condizione fisica servono 4–12 settimane.",
+   say:"È il formato più studiato. La condizione cardiorespiratoria è l'unico esito del campo con certezza moderata.",
+   nosay:"«Brucia calorie», «rinforza le gambe».",
+   src:[["Jenkins e colleghi, 2019. Appl Physiol Nutr Metab 44(6):681-684.","good"],["Meta-analisi BJSM 2025: 11 trial, 414 partecipanti, certezza moderata.","good"]],
+   when:"Calo di vigilanza a metà mattina o nel primo pomeriggio."},
+  {id:"corsa", code:"MS 1.3", group:"Attivare", dir:"Attivare (intenso)", lvl:2, grade:"A", name:"Corsa sul posto, 1 minuto", dur:"1 min, 3 volte al giorno", mins:[1],
+   steps:["Un minuto di corsa sul posto a intensità vigorosa.","Ripeti tre volte nella giornata."],
+   dose:"3 × 1 minuto al giorno, 4 giorni a settimana, per 4 settimane. Non esiste una versione ridotta.",
+   say:"Prima misura oggettiva sulla lucidità in questo formato (Trail Making e Stroop). È uno studio pilota su 25 impiegati.",
+   nosay:"Che sia acquisito; che valga anche per una marcia leggera.",
+   src:[["Mues, Flohr e Kurpiers, 2025. Sports 13(6):186. Studio pilota randomizzato.","warn"]],
+   when:"Calo di lucidità e attenzione."},
+  // NEUTRA
+  {id:"fly", code:"MS 2.1", group:"Collo e spalle", dir:"Neutra", lvl:1, grade:"A", name:"Reverse fly con elastico", dur:"1–5 min", mins:[1,3,5],
+   steps:["In piedi, elastico teso davanti a te all'altezza delle spalle.","Apri le braccia di lato portando le scapole verso il centro.","Ritorno lento. Il movimento parte dalle scapole, non dalle mani.","Senza elastico: solo avvicinare le scapole."],
+   dose:"2 minuti al giorno, 5 giorni a settimana, per 10 settimane, aumentando la resistenza.",
+   say:"In un trial su 198 lavoratori, 2 minuti al giorno per 10 settimane hanno ridotto il dolore di 1,4 punti su 10, quasi quanto 12 minuti.",
+   nosay:"«Cura la cervicale» o qualsiasi affermazione diagnostica.",
+   src:[["Andersen e colleghi, 2011. Pain 152(2):440-446. Trial randomizzato.","good"],["Gao e colleghi, 2020. Applied Sciences 10(3):756.","good"]],
+   when:"Dolore o rigidità a collo e spalle."},
+  {id:"shrug", code:"MS 2.2", group:"Collo e spalle", dir:"Neutra", lvl:1, grade:"A", name:"Shrug con elastico", dur:"1–5 min", mins:[1,3,5],
+   steps:["In piedi sull'elastico, estremità nelle mani lungo i fianchi.","Alza lentamente le spalle verso le orecchie, breve pausa, scendi controllato.","Nessuna rotazione. Senza elastico: solo alzare e abbassare le spalle."],
+   dose:"2 minuti al giorno, 5 giorni a settimana, per 10 settimane, aumentando la resistenza.",
+   say:"Come il reverse fly. L'elastico va reso più teso con il passare delle settimane.",
+   nosay:"«Scioglie le contratture».",
+   src:[["Andersen e colleghi, 2011. Pain 152(2):440-446.","good"],["Gao e colleghi, 2020. Applied Sciences 10(3):756.","good"]],
+   when:"Spalle alte e trapezio teso."},
+  // CONNETTERE
+  {id:"gruppo", code:"MS 6.1", group:"Connettere", dir:"Attivare (sociale)", lvl:1, grade:"A", name:"Pausa di gruppo condotta", dur:"3–5 min", mins:[3,5], team:true,
+   steps:["Chi conduce invita: «ci fermiamo 2 minuti, chi vuole si unisce».","Esegue insieme al gruppo un esercizio scelto da questa app.","Nessuno si esibisce da solo; nessun commento su chi resta seduto."],
+   dose:"Le prove riguardano chi conduce, non la durata.",
+   say:"La variabile documentata non è l'esercizio ma chi lo conduce: +24,1% di partecipazione con un conduttore coinvolgente. Poster e email non hanno effetto.",
+   nosay:"«Rilascia endorfine», «produce serotonina».",
+   src:[["Studio PAW (Physical Activity at Work), valutazione di processo. PMC11739726.","good"]],
+   when:"Calo di energia del gruppo."},
+  {id:"ritmo", code:"PS", group:"Connettere", dir:"Attivare (sociale)", lvl:1, grade:"E", name:"Ritmo comune", dur:"3 min", mins:[3], team:true,
+   steps:["Il gruppo batte le mani o si muove su un ritmo semplice, tutti allo stesso tempo."],
+   dose:"Nessun protocollo per l'ambiente di lavoro.",
+   say:"Negli esperimenti muoversi in sincronia aumenta il senso di legame più dello stesso movimento fatto da soli.",
+   nosay:"Effetti neurochimici.",
+   src:[["Cohen e colleghi, 2010; Tarr e colleghi, 2015. Studi sperimentali piccoli.","warn"]],
    when:"Per riattivare il gruppo dopo pranzo."},
-  {id:"caffe", group:"Proteggere il sonno", name:"Regola delle 6 ore", dur:"abitudine", habit:"caffe",
+  {id:"ridere", code:"PS", group:"Connettere", dir:"Attivare (sociale)", lvl:1, grade:"E", name:"Ridere insieme", dur:"3 min", mins:[3], team:true,
+   steps:["Un momento leggero condiviso con il gruppo, non da soli davanti a un video."],
+   dose:"Nessun protocollo.",
+   say:"Si propone come momento di gruppo. Lo studio di riferimento è di laboratorio.",
+   nosay:"«Rilascia oppioidi»: lo studio è su 12 persone, fuori dal contesto di lavoro.",
+   src:[["Manninen e colleghi, 2017. Studio con la PET su 12 uomini.","warn"]],
+   when:"In apertura di una riunione."},
+  // SERA
+  {id:"caffe", code:"PS", group:"Sera", dir:"Recupero serale", lvl:1, grade:"A", name:"Regola delle 6 ore", dur:"abitudine", habit:"caffe",
    steps:["Prendi l'ultimo caffè almeno 6 ore prima di andare a dormire."],
-   why:"La caffeina presa fino a 6 ore prima di dormire riduce il sonno di oltre un'ora, e le persone non se ne accorgono.",
-   src:[["Drake e colleghi, 2013: 400 mg di caffeina, solo 12 persone.","warn"]],
+   dose:"Studio: 400 mg di caffeina fino a 6 ore prima di dormire.",
+   say:"La caffeina presa fino a 6 ore prima riduce il sonno di oltre un'ora, e le persone non se ne accorgono.",
+   nosay:"Soglie personali precise.",
+   src:[["Drake e colleghi, 2013. Solo 12 persone.","warn"]],
    when:"Ogni giorno."},
-  {id:"sera", group:"Proteggere il sonno", name:"Sera in penombra", dur:"abitudine",
+  {id:"sera", code:"PS", group:"Sera", dir:"Recupero serale", lvl:1, grade:"A", name:"Sera in penombra", dur:"abitudine",
    steps:["Nell'ora prima di dormire usa luce calda e bassa.","Riduci gli schermi."],
-   why:"La luce degli schermi la sera sopprime la melatonina e ritarda l'orologio biologico.",
-   src:[["Chang e colleghi, 2015: studio controllato su 12 persone.","warn"]],
+   dose:"Studio controllato su 12 persone.",
+   say:"La luce degli schermi la sera sopprime la melatonina e ritarda l'orologio biologico.",
+   nosay:"«Cura l'insonnia».",
+   src:[["Chang e colleghi, 2015. Studio controllato su 12 persone.","warn"]],
    when:"Ogni sera."},
-  {id:"esperimento", group:"Sperimentare", name:"Esperimento di 2 settimane", dur:"14 giorni", exp:true,
-   steps:["Scegli un solo esercizio.","Praticalo ogni giorno per 2 settimane.","Ogni sera segna energia e tensione nel Diario.","Confronta con le 2 settimane precedenti."],
-   why:"È un'idea progettuale basata sul principio di misurare su di sé. Non è un risultato scientifico.",
-   src:[["Ipotesi da verificare con i pilota in azienda.","hyp"]],
+  // SPERIMENTARE
+  {id:"esperimento", code:"PS · MS 3.5", group:"Sperimentare", dir:"Misurare", lvl:1, grade:"E", name:"Esperimento di 2 settimane", dur:"14 giorni", exp:true,
+   steps:["Scegli un solo esercizio.","Praticalo ogni giorno per 2 settimane.","Ogni sera segna energia, tensione e dolore nel Diario.","Confronta con le 2 settimane precedenti."],
+   dose:"14 giorni.",
+   say:"Promemoria e registrazione sono due dei quattro componenti che, negli studi, mantengono alta l'aderenza.",
+   nosay:"Che il confronto su di sé dimostri un effetto.",
+   src:[["Babir e colleghi, 2025. Scand J Med Sci Sports 35:e70117: con il solo promemoria digitale aderenza del 97% su 12 settimane (studio di fattibilità).","good"],["Il confronto personale prima/dopo è un'ipotesi progettuale.","hyp"]],
    when:"Quando vuoi capire cosa funziona per te."}
 ];
 const EVLABEL = {good:"Prove buone", warn:"Indizi", hyp:"Ipotesi"};
 const byId = Object.fromEntries(EX.map(x=>[x.id,x]));
 function evLevels(x){ return [...new Set(x.src.map(s=>s[1]))]; }
-function evPills(x){ return evLevels(x).map(l=>`<span class="ev ${l}">${EVLABEL[l]}</span>`).join(" "); }
+const GRADE = {P:"Protocollo studiato", A:"Adattato da protocollo", E:"Esperienziale", "P/A":"Protocollo / adattato"};
+function evPills(x){
+  return `<span class="tag">${x.dir}</span>`+(x.lvl===2?`<span class="tag l2">Livello 2</span>`:"")+
+    `<span class="tag" title="${GRADE[x.grade]||""}">Grado ${x.grade}</span> `+evLevels(x).map(l=>`<span class="ev ${l}">${EVLABEL[l]}</span>`).join(" ");
+}
 
 // ---------- Stato salvato (solo su questo dispositivo) ----------
-const KEY = "pitstop.v1";
+const KEY = "pitstop.v2";
 const iso = d => d.toISOString().slice(0,10);
 const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
 function exampleData(){
@@ -406,13 +543,14 @@ function exampleData(){
   // Numeri inventati, deterministici, solo per mostrare il diario
   const eA=[5,4,5,4,6,5,4,5,4,5,5,4,5,4], tA=[6,7,6,7,5,6,7,6,7,6,6,7,6,6];
   const eB=[5,6,5,6,6,7,6,6,7,6,7,6,7,7], tB=[6,5,5,6,5,4,5,5,4,5,4,5,4,4];
+  const pA=[4,5,4,4,5,4,5,4,4,5,4,4,5,4], pB=[4,4,4,3,4,3,3,3,3,2,3,3,2,3];
   for(let i=0;i<28;i++){
     const d = iso(addDays(today, i-27));
-    days.push({d, e: i<14?eA[i]:eB[i-14], t: i<14?tA[i]:tB[i-14]});
+    days.push({d, e: i<14?eA[i]:eB[i-14], t: i<14?tA[i]:tB[i-14], p: i<14?pA[i]:pB[i-14]});
   }
-  const sessions=[{ex:"respiro",pe:4,pt:7,ae:5,at:5},{ex:"pausa",pe:3,pt:5,ae:5,at:4},{ex:"luce",pe:4,pt:4,ae:6,at:3},{ex:"respiro",pe:5,pt:8,ae:5,at:6},{ex:"muovi",pe:3,pt:5,ae:6,at:4}]
+  const sessions=[{ex:"respiro",pe:4,pt:7,ae:5,at:5},{ex:"micro3",pe:3,pt:5,ae:5,at:4},{ex:"luce",pe:4,pt:4,ae:6,at:3},{ex:"guidato",pe:5,pt:8,ae:5,at:6},{ex:"cammino",pe:3,pt:5,ae:6,at:4}]
     .map((s,i)=>({...s, d: iso(addDays(today,-(i*3)))}));
-  return {example:true, days, sessions, exp:{ex:"respiro", start: iso(addDays(today,-13))}};
+  return {example:true, days, sessions, exp:{ex:"fly", start: iso(addDays(today,-13))}};
 }
 let S;
 function load(){ try{ const raw = localStorage.getItem(KEY); if(raw){ S = JSON.parse(raw); return; } }catch(e){} S = exampleData(); }
@@ -423,7 +561,7 @@ load();
 const $ = id => document.getElementById(id);
 function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._h); toast._h=setTimeout(()=>t.hidden=true,2400); }
 function bindGauge(inp,out){ const f=()=>$(out).textContent=$(inp).value; $(inp).addEventListener("input",f); f(); }
-["e:eVal","t:tVal","de:deVal","dt:dtVal","pe:peVal","pt:ptVal"].forEach(p=>{const [a,b]=p.split(":");bindGauge(a,b);});
+["e:eVal","t:tVal","de:deVal","dt:dtVal","dp:dpVal","pe:peVal","pt:ptVal"].forEach(p=>{const [a,b]=p.split(":");bindGauge(a,b);});
 const fmt = n => (Math.round(n*10)/10).toLocaleString("it-IT",{minimumFractionDigits:1,maximumFractionDigits:1});
 
 // ---------- Schede ----------
@@ -453,12 +591,18 @@ document.addEventListener("click",e=>{ const c=e.target.closest("[data-ex]"); if
 let pre = null;
 $("suggestBtn").addEventListener("click",()=>{
   const e=+$("e").value, t=+$("t").value, heavy=$("heavy").checked, team=$("team").checked, morning=new Date().getHours()<12;
+  const stress=$("stress").checked, neck=$("neck").checked, meal=$("meal").checked, seated=$("seated").checked;
   pre={e,t};
+  // Criterio di Movement Snack: bisogno → direzione → esercizio. Mai un esercizio attivante a chi è in tensione; mai il livello 2.
   let ids, reason;
-  if(t>=6){ ids=["respiro","sospiro","pausa"]; reason="La tensione è alta: prima conviene calmare il corpo."; }
-  else if(e<=4){ ids = morning?["luce","muovi","pausa"]:["muovi","pausa","luce"]; reason="L'energia è bassa: serve ricaricare, meglio muovendosi o uscendo alla luce."; }
-  else { ids=["pausa","muovi","respiro"]; reason="Stai abbastanza bene: una pausa vera aiuta a mantenere l'energia."; }
-  if(team) ids=[ids[0], t>=6?"ritmo":"ridere", ids[1]];
+  if(stress){ ids=["guidato","respiro","sospiro"]; reason="Dopo un momento stressante il recupero guidato funziona meglio del riposo passivo. Direzione: calmare."; }
+  else if(t>=6){ ids=["respiro","guidato","sospiro"]; reason="La tensione è alta: prima conviene calmare. Un esercizio attivante adesso darebbe solo fastidio."; }
+  else if(seated){ ids=["talloni","respiro"]; reason="Non puoi alzarti: due esercizi che si fanno da seduti senza che nessuno se ne accorga."; }
+  else if(neck){ ids=["fly","shrug","micro3"]; reason="Collo e spalle: esercizi neutri, con lo studio più solido del progetto (Andersen 2011)."; }
+  else if(meal){ ids=["cammino","corpo","micro3"]; reason="Dopo i pasti pochi minuti di cammino migliorano la risposta all'insulina. Direzione: attivare, leggero."; }
+  else if(e<=4){ ids = morning?["luce","activity","cammino"]:["activity","cammino","micro3"]; reason="L'energia è bassa: serve attivare."; }
+  else { ids=["micro3","pausa","cammino"]; reason="Stai abbastanza bene: la micro-pausa da 3 minuti è il protocollo studiato per mantenere l'energia."; }
+  if(team) ids=[ids[0], "gruppo", ...ids.slice(1,2)];
   let extra="";
   if(heavy) extra+=`<p class="note">Dopo un lavoro molto impegnativo una micro-pausa da pochi minuti può non bastare: se puoi, prenditi più di 10 minuti (Albulescu 2022).</p>`;
   if(t>=8) extra+=`<p class="muted small">Se ti senti così spesso, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>`;
@@ -502,7 +646,12 @@ function openSession(id){
   $("sxGroup").textContent=x.group; $("sxTitle").textContent=x.name;
   $("sxMeta").innerHTML=`<span class="muted small">${x.dur}${x.team?" · in gruppo":""}</span> ${evPills(x)}`;
   $("sxSteps").innerHTML=x.steps.map(s=>`<li>${s}</li>`).join("");
-  $("sxWhy").innerHTML=`<p>${x.why}</p>`+x.src.map(s=>`<p class="why"><span class="ev ${s[1]}">${EVLABEL[s[1]]}</span> ${s[0]}</p>`).join("")+`<p class="why">Quando: ${x.when}</p>`;
+  $("sxL2").hidden = x.lvl!==2;
+  $("sxWhy").innerHTML=
+    `<p class="why"><b>Quando:</b> ${x.when}</p><p class="why"><b>Dose studiata:</b> ${x.dose}</p>`+
+    `<p class="say"><b>Cosa si può dire.</b> ${x.say}</p><p class="nosay"><b>Cosa non si dice.</b> ${x.nosay}</p>`+
+    x.src.map(s=>`<p class="why"><span class="ev ${s[1]}">${EVLABEL[s[1]]}</span> ${s[0]}</p>`).join("")+
+    `<p class="why">Scheda: ${x.code} · ${GRADE[x.grade]||""}</p>`;
   $("sxAfter").hidden=true;
   const run=$("sxRun");
   if(x.mins){
@@ -539,7 +688,11 @@ function startRun(x, secs){
     runTimer={}; step();
   } else { runTimer={}; }
   runTimer.prog=setInterval(()=>{ const el=performance.now()-t0, f=Math.min(1,el/total); $("prog").style.width=(f*100)+"%";
-    if(!x.breath){ const r=Math.max(0,Math.ceil((total-el)/1000)); $("phase").textContent=`${Math.floor(r/60)}:${String(r%60).padStart(2,"0")}`; }
+    if(x.seq){ // sequenza a tempo: mostra l'esercizio corrente
+      let acc=0, cur=x.seq[x.seq.length-1], left=0;
+      for(const s of x.seq){ if(el/1000 < acc+s.s){ cur=s; left=Math.ceil(acc+s.s-el/1000); break; } acc+=s.s; }
+      $("phase").textContent=`${cur.l} · ${left}`;
+    } else if(!x.breath){ const r=Math.max(0,Math.ceil((total-el)/1000)); $("phase").textContent=`${Math.floor(r/60)}:${String(r%60).padStart(2,"0")}`; }
     if(f>=1){ finish(); } },250);
 }
 function stopRun(){ if(runTimer){ clearTimeout(runTimer.sub); clearInterval(runTimer.cd); clearInterval(runTimer.prog); runTimer=null; } }
@@ -565,7 +718,7 @@ function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null}; 
 $("clearExamples").addEventListener("click",()=>clearExamples(false));
 $("saveDay").addEventListener("click",()=>{
   if(S.example) clearExamples(true);
-  const d=iso(new Date()); S.days=S.days.filter(x=>x.d!==d); S.days.push({d,e:+$("de").value,t:+$("dt").value});
+  const d=iso(new Date()); S.days=S.days.filter(x=>x.d!==d); S.days.push({d,e:+$("de").value,t:+$("dt").value,p:+$("dp").value});
   S.days.sort((a,b)=>a.d<b.d?-1:1); save(); renderDiary(); toast("Giornata salvata");
 });
 const avg = a => a.reduce((s,v)=>s+v,0)/a.length;
@@ -582,9 +735,10 @@ function renderDiary(){
     const name=byId[S.exp.ex]?.name||S.exp.ex;
     let res;
     if(before.length<5||after.length<5) res=`<p class="muted small">Servono almeno 5 giorni registrati prima e 5 dopo l'inizio. Ora ne hai ${before.length} prima e ${after.length} dopo.</p>`;
-    else res=`<div class="stats" style="grid-template-columns:repeat(2,1fr)">
+    else res=`<div class="stats" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
       <div class="stat"><b class="num">${fmt(avg(before.map(x=>x.e)))} → ${fmt(avg(after.map(x=>x.e)))}</b><span>energia a fine giornata, prima → durante</span></div>
-      <div class="stat"><b class="num">${fmt(avg(before.map(x=>x.t)))} → ${fmt(avg(after.map(x=>x.t)))}</b><span>tensione a fine giornata, prima → durante</span></div></div>
+      <div class="stat"><b class="num">${fmt(avg(before.map(x=>x.t)))} → ${fmt(avg(after.map(x=>x.t)))}</b><span>tensione a fine giornata, prima → durante</span></div>
+      ${before.every(x=>x.p!=null)&&after.every(x=>x.p!=null)?`<div class="stat"><b class="num">${fmt(avg(before.map(x=>x.p)))} → ${fmt(avg(after.map(x=>x.p)))}</b><span>dolore a collo e spalle, prima → durante</span></div>`:""}</div>
       <p class="muted small">Un confronto su di te, senza gruppo di controllo: anche il periodo dell'anno o il carico di lavoro possono spiegare la differenza.</p>`;
     box.innerHTML=`<p>In prova: <b>${name}</b>, dal ${new Date(S.exp.start).toLocaleDateString("it-IT",{day:"numeric",month:"long"})}.</p>${res}`;
   }
@@ -604,6 +758,8 @@ function drawChart(){
   const path=k=>days.map((p,i)=>`${i?"L":"M"}${X(p.d).toFixed(1)},${Y(p[k]).toFixed(1)}`).join("");
   g+=`<path d="${path("e")}" fill="none" stroke="var(--energy)" stroke-width="2" stroke-linejoin="round"/>`;
   g+=`<path d="${path("t")}" fill="none" stroke="var(--tension)" stroke-width="2" stroke-dasharray="6 4" stroke-linejoin="round"/>`;
+  const pd=days.filter(p=>p.p!=null);
+  if(pd.length>1) g+=`<path d="${pd.map((p,i)=>`${i?"L":"M"}${X(p.d).toFixed(1)},${Y(p.p).toFixed(1)}`).join("")}" fill="none" stroke="var(--pain)" stroke-width="2" stroke-dasharray="1.5 4" stroke-linecap="round" stroke-linejoin="round"/>`;
   g+=`<line id="guide" y1="${T}" y2="${H-B}" stroke="var(--muted)" stroke-width="1" visibility="hidden"/>`;
   g+=`<rect id="hit" x="${L}" y="0" width="${W-L-R}" height="${H}" fill="transparent"/></svg><div class="tip" id="tip" hidden></div>`;
   host.innerHTML=g;
@@ -612,10 +768,10 @@ function drawChart(){
     let best=days[0]; days.forEach(p=>{ if(Math.abs(X(p.d)-sx)<Math.abs(X(best.d)-sx)) best=p; });
     const x=X(best.d); guide.setAttribute("x1",x); guide.setAttribute("x2",x); guide.setAttribute("visibility","visible");
     tip.hidden=false; tip.style.left=(x/W*r.width)+"px"; tip.style.top=(Y(Math.max(best.e,best.t))/H*r.height)+"px";
-    tip.textContent=`${lbl(best.d)} · energia ${best.e} · tensione ${best.t}`; };
+    tip.textContent=`${lbl(best.d)} · energia ${best.e} · tensione ${best.t}`+(best.p!=null?` · dolore ${best.p}`:""); };
   svg.addEventListener("pointermove",move); svg.addEventListener("pointerleave",()=>{ tip.hidden=true; guide.setAttribute("visibility","hidden"); });
-  $("dayTable").innerHTML=`<table><thead><tr><th>Giorno</th><th class="n">Energia</th><th class="n">Tensione</th></tr></thead><tbody>${
-    days.slice().reverse().map(p=>`<tr><td>${lbl(p.d)}${S.exp&&p.d===S.exp.start?" · inizio":""}</td><td class="n">${p.e}</td><td class="n">${p.t}</td></tr>`).join("")}</tbody></table>`;
+  $("dayTable").innerHTML=`<table><thead><tr><th>Giorno</th><th class="n">Energia</th><th class="n">Tensione</th><th class="n">Dolore</th></tr></thead><tbody>${
+    days.slice().reverse().map(p=>`<tr><td>${lbl(p.d)}${S.exp&&p.d===S.exp.start?" · inizio":""}</td><td class="n">${p.e}</td><td class="n">${p.t}</td><td class="n">${p.p??"–"}</td></tr>`).join("")}</tbody></table>`;
 }
 
 // ---------- Versione installabile: notifiche e funzionamento offline ----------
