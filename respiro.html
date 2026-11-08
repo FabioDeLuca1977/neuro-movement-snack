@@ -29,8 +29,9 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;pointer-events:none}
 .phase{font-family:var(--display);font-weight:400;font-size:clamp(2.6rem,12vw,4.2rem);line-height:1;letter-spacing:.01em}
 .count{font-family:var(--display);font-weight:700;font-size:clamp(3rem,16vw,5rem);line-height:1}
-.hint{min-height:1.4em;font-size:1.05rem;color:var(--dim);max-width:30ch}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:12px;max-width:520px;width:100%;margin:0 auto;backdrop-filter:blur(6px)}
+.hint{min-height:1.4em;font-size:1.05rem;color:var(--dim);max-width:30ch;margin-top:min(26vw,100px)}
+.phase:empty,.count:empty{min-height:1em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px;display:grid;gap:12px;max-width:520px;width:100%;margin:0 auto;backdrop-filter:blur(6px);max-height:calc(100dvh - 100px);overflow-y:auto}
 .panel h1{font-family:var(--display);font-weight:700;font-size:2rem;margin:0;line-height:1.05}
 .panel p{margin:0;line-height:1.45;color:var(--dim)}
 .btn{font:inherit;font-weight:600;font-size:1.1rem;min-height:54px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);padding:0 22px;cursor:pointer}
@@ -45,10 +46,23 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
 .meter .bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;position:relative}
 .meter .bar i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--amber)}
 .meter .bar b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
-.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.stat{border:1px solid var(--line);border-radius:16px;padding:10px 12px}
-.stat b{display:block;font-weight:600;font-size:1.6rem;font-variant-numeric:tabular-nums}
-.stat span{font-size:.78rem;color:var(--dim)}
+.stats{display:grid;gap:8px}
+.stat{display:grid;grid-template-columns:minmax(0,7.5rem) 1fr;align-items:center;gap:12px;background:#ffffff;color:#2f3437;border-radius:12px;padding:8px 16px}
+.stat b{font-family:var(--display);font-weight:700;font-size:2.6rem;line-height:1.1;color:#14785a;font-variant-numeric:tabular-nums}
+.stat span{font-size:1rem}
+.eyebrow{font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#7fd4b3;margin:0}
+.ttl{font-family:var(--display);font-weight:700;font-size:1.35rem;flex:1}
+.top .back{min-width:44px}
+/* sincronia e forma d'onda */
+.sync{display:grid;justify-items:center;gap:0;text-align:center}
+.sync span{font-size:1.05rem;color:var(--ink)}
+.sync b{font-family:var(--display);font-weight:700;font-size:3.2rem;line-height:1.05;color:#7fd4b3;font-variant-numeric:tabular-nums}
+.wave{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-height:58px}
+.bars{display:flex;align-items:center;gap:3px;height:34px}
+.bars i{width:4px;border-radius:2px;background:#7fd4b3;height:4px;transition:height .08s linear}
+.wave #hear{font-size:.8rem;font-weight:700;letter-spacing:.16em;flex:1;white-space:nowrap}
+.wave .rate{white-space:nowrap}
+.wave .rate{font-family:var(--mono);font-size:.72rem;color:var(--dim)}
 .small{font-size:.86rem}
 .livebar{display:grid;gap:10px;max-width:520px;width:100%;margin:0 auto}
 @media (prefers-reduced-motion: reduce){ .panel{backdrop-filter:none} }
@@ -59,11 +73,12 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
 
 <div class="ui">
   <div class="top">
-    <a class="back" href="./"><svg width="22" height="22" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M22 13H5M12 5l-8 8 8 8"/></svg>Pit Stop</a>
+    <a class="back" href="./" aria-label="Torna a Pit Stop"><svg width="24" height="24" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M22 13H5M12 5l-8 8 8 8"/></svg></a>
+    <span class="ttl" id="ttl">Respiro guidato</span>
     <span class="tag" id="tag">MS 4.1 · CALMARE</span>
   </div>
 
-  <div class="center" aria-live="polite">
+  <div class="center" id="centerBox" aria-live="polite">
     <p class="phase" id="phase"></p>
     <p class="count" id="count"></p>
     <p class="hint" id="hint"></p>
@@ -94,13 +109,14 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
 
   <!-- In corso -->
   <div class="livebar" id="live" hidden>
-    <div class="meter" id="liveMeter"><span id="hear">TI SENTO</span><span class="bar"><i id="lvl"></i><b id="thr"></b></span><span id="rate">– resp/min</span></div>
+    <div class="sync" id="syncBox" hidden><span>a tempo con la guida</span><b id="syncPct" class="num">–</b></div>
+    <div class="wave" id="liveMeter"><span class="bars" id="bars" aria-hidden="true"></span><span id="hear">IN ASCOLTO</span><span id="rate" class="rate">– resp/min</span></div>
     <div class="row"><button class="btn" id="pause">Pausa</button><button class="btn" id="stop">Concludi</button></div>
   </div>
 
   <!-- Fine -->
   <div class="panel" id="end" hidden>
-    <h1>Fatto</h1>
+    <div><p class="eyebrow">La tua pausa</p><h1>Fatto</h1></div>
     <div class="stats">
       <div class="stat"><b id="sBreaths">–</b><span>respiri</span></div>
       <div class="stat"><b id="sRate">–</b><span>respiri al minuto</span></div>
@@ -122,7 +138,10 @@ const PATTERNS = {
 const exId = new URLSearchParams(location.search).get("ex");
 const P = PATTERNS[exId] || PATTERNS.respiro;
 const $ = id => document.getElementById(id);
-$("title").textContent = P.name; $("tag").textContent = P.tag;
+$("title").textContent = P.name; $("ttl").textContent = P.name; $("tag").textContent = P.tag;
+// forma d'onda: 18 barre che seguono il livello del soffio
+const BARS = 18, hist = new Array(BARS).fill(0);
+$("bars").innerHTML = "<i></i>".repeat(BARS);
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // ---------- Microfono: livello del soffio, nient'altro ----------
@@ -192,8 +211,7 @@ async function go(){
   try{ wake = await navigator.wakeLock?.request("screen"); }catch(e){}
   S = {dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
        match:0, total:0, exhales:[], onAt:0, ph:{in:0,inLoud:0,out:0,outLoud:0}, feedback:""};
-  $("liveMeter").hidden = !an;
-  if(an) $("thr").style.left = Math.min(100, thr/Math.max(thr*2,0.02)*100)+"%";
+  $("liveMeter").hidden = !an; $("syncBox").hidden = !an; $("syncPct").textContent="–";
   show("live"); startPhase();
   cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
 }
@@ -215,9 +233,17 @@ function endPhase(){
   if(performance.now()-S.t0-S.paused>=S.dur && S.idx%P.phases.length===0){ finish(); return; }
   startPhase();
 }
-let last=performance.now();
+// la logica gira a 20 Hz con un timer, il disegno con requestAnimationFrame:
+// così i tempi restano giusti anche se il browser rallenta le animazioni
+let last=performance.now(), lastDraw=performance.now();
+setInterval(()=>tick(performance.now()), 50);
 function loop(now){
-  const dt=Math.min(0.1,(now-last)/1000); last=now;
+  const dt=Math.min(0.1,(now-lastDraw)/1000); lastDraw=now;
+  draw(now, dt);
+  raf=requestAnimationFrame(loop);
+}
+function tick(now){
+  const dt=Math.min(0.5,(now-last)/1000); last=now;
   if(S && !S.pauseAt){
     const p=phase(), el=(now-S.phaseT0)/1000;
     const left=Math.max(1,Math.ceil(p.s-el)); $("count").textContent=left;
@@ -227,8 +253,11 @@ function loop(now){
       const was=breathing; breathing = breathing ? v>thr*0.75 : v>thr;
       if(breathing && !was) S.onAt=now;
       if(!breathing && was && now-S.onAt>800) S.exhales.push(now);
-      $("lvl").style.width=Math.min(100,v/Math.max(thr*2,0.02)*100)+"%";
+      hist.shift(); hist.push(Math.min(1, v/Math.max(thr*2,0.02)));
+      const bars=$("bars").children;
+      for(let k=0;k<BARS;k++){ const c=1-Math.abs(k-(BARS-1)/2)/(BARS/2)*0.5; bars[k].style.height=(4+hist[k]*30*c)+"px"; }
       $("hear").textContent = breathing ? "TI SENTO" : "IN ASCOLTO";
+      if(S.total>3) $("syncPct").textContent=Math.round(S.match/S.total*100)+"%";
       if(now>speakingUntil){
         S.total+=dt;
         if(p.k==="out"){ S.ph.out+=dt; if(breathing){ S.ph.outLoud+=dt; S.match+=dt; } }
@@ -239,8 +268,6 @@ function loop(now){
     }
     if(el>=p.s) endPhase();
   }
-  draw(now, dt);
-  raf=requestAnimationFrame(loop);
 }
 function finish(){
   const elapsedMin=(performance.now()-S.t0-S.paused)/60000;
@@ -277,13 +304,15 @@ const cv=$("cv"), g=cv.getContext("2d");
 let W=0,H=0,DPR=1;
 function resize(){ DPR=Math.min(2,devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; g.setTransform(DPR,0,0,DPR,0,0); }
 addEventListener("resize",resize); resize();
-const parts=Array.from({length:reduced?40:140},(_,i)=>({a:Math.random()*Math.PI*2, d:Math.random(), sp:0.05+Math.random()*0.15, push:0}));
+const parts=Array.from({length:reduced?16:48},(_,i)=>({a:Math.random()*Math.PI*2, d:Math.random(), sp:0.05+Math.random()*0.15, push:0}));
 let scale=0.55, hue=0;
 const mix=(a,b,t)=>a+(b-a)*t;
-const TEAL=[29,158,117], AMBER=[198,138,24];
+const TEAL=[95,214,160], AMBER=[226,170,70];
 function draw(now, dt){
   g.fillStyle="#1f4e5f"; g.fillRect(0,0,W,H);
-  const cx=W/2, cy=H*0.42, R=Math.min(W,H)*0.33;
+  // l'anello si centra sul testo "Inspira / Espira"
+  const pr=$("phase").getBoundingClientRect(), cr=$("count").getBoundingClientRect();
+  const cx=W/2, cy=(pr.top+cr.bottom)/2, R=Math.min(W*0.42, 170);
   let target=0.55, warm=0, prog=0;
   if(S){
     const p=phase(), el=(now-S.phaseT0)/1000; prog=Math.min(1,el/p.s);
@@ -295,36 +324,24 @@ function draw(now, dt){
   scale += (target-scale)*Math.min(1,dt*8);
   hue += ((S?warm:0)-hue)*Math.min(1,dt*3);
   const col=TEAL.map((c,i)=>Math.round(mix(c,AMBER[i],hue)));
-  const r=R*scale;
-  // alone
-  const glow=g.createRadialGradient(cx,cy,r*0.6,cx,cy,r*1.9);
-  glow.addColorStop(0,`rgba(${col},0.28)`); glow.addColorStop(1,"rgba(31,78,95,0)");
-  g.fillStyle=glow; g.beginPath(); g.arc(cx,cy,r*1.9,0,Math.PI*2); g.fill();
-  // corpo del cerchio, leggermente organico
-  const t=now/1000, wob=reduced?0:1;
-  g.beginPath();
-  for(let i=0;i<=72;i++){
-    const th=i/72*Math.PI*2;
-    const k=1+wob*(0.016*Math.sin(th*3+t*0.9)+0.01*Math.sin(th*5-t*1.3));
-    const x=cx+Math.cos(th)*r*k, y=cy+Math.sin(th)*r*k;
-    i?g.lineTo(x,y):g.moveTo(x,y);
-  }
-  g.closePath(); g.fillStyle=`rgb(${col})`; g.fill();
-  // anello del livello di sincronia
-  if(S && an && S.total>3){
-    const f=S.match/S.total;
-    g.lineWidth=3; g.strokeStyle="rgba(243,245,244,0.18)"; g.beginPath(); g.arc(cx,cy,R*1.18,0,Math.PI*2); g.stroke();
-    g.strokeStyle="rgba(243,245,244,0.85)"; g.beginPath(); g.arc(cx,cy,R*1.18,-Math.PI/2,-Math.PI/2+Math.PI*2*f); g.stroke();
-  }
+  // l'anello respira: grande in inspirazione, piccolo in espirazione
+  const r=R*(0.62+0.38*((scale-0.55)/0.45));
+  g.fillStyle=`rgba(${col},0.10)`; g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2); g.fill();
+  g.lineWidth=10; g.lineCap="round";
+  g.strokeStyle="rgba(243,245,244,0.16)"; g.beginPath(); g.arc(cx,cy,r,0,Math.PI*2); g.stroke();
+  // l'arco: con il microfono la sincronia, senza il tempo della fase
+  let f=0;
+  if(S){ f = (an && S.total>3) ? S.match/S.total : prog; }
+  if(f>0){ g.strokeStyle=`rgb(${col})`; g.beginPath(); g.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+Math.PI*2*f); g.stroke(); }
   // particelle: il soffio le spinge verso l'esterno
   const wind = (an && breathing) ? Math.min(1,(lvl-thr)/(thr*1.5)+0.35) : 0;
   for(const q of parts){
     q.a += q.sp*dt*(0.4+wind*1.6);
     q.push += ((wind*(0.6+q.d*0.8)) - q.push)*Math.min(1,dt*4);
-    const rr = r*1.05 + R*0.15 + q.d*R*0.35 + q.push*R*0.55;
+    const rr = r + 16 + q.d*R*0.22 + q.push*R*0.45;
     const x=cx+Math.cos(q.a)*rr, y=cy+Math.sin(q.a)*rr;
-    g.fillStyle=`rgba(${col},${0.25+0.5*(1-q.d)})`;
-    g.beginPath(); g.arc(x,y,1.2+q.d*1.6+q.push*1.5,0,Math.PI*2); g.fill();
+    g.fillStyle=`rgba(${col},${0.35+0.5*(1-q.d)})`;
+    g.beginPath(); g.arc(x,y,2+q.d*2+q.push*2,0,Math.PI*2); g.fill();
   }
 }
 requestAnimationFrame(loop);

@@ -49,7 +49,9 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .brand{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px));background:var(--petrol);color:#ffffff}
 .brand h1{font-size:1.5rem;display:flex;align-items:center;gap:10px}
 .brand h1 i{display:none}
-.brand h1::before{content:"";width:16px;height:16px;border-radius:50%;background:var(--green);animation:breathe 10s ease-in-out infinite}
+.brand h1::before{content:"";width:18px;height:18px;border-radius:50%;border:3px solid #3fc495;box-sizing:border-box;animation:breathe 10s ease-in-out infinite}
+.voiceline{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-style:italic}
+.voiceline input{width:20px;height:20px;accent-color:var(--green)}
 .brand .next{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);text-align:right}
 nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-bottom:1px solid var(--line);padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 nav.tabs button{border:0;background:none;padding:12px 2px 10px;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;min-height:46px}
@@ -149,7 +151,7 @@ details.alt summary{cursor:pointer;font-size:.85rem;color:var(--muted);min-heigh
 .orbtext .n{font-family:var(--display);font-weight:700;font-size:5.5rem;line-height:1}
 /* Attivare: il numero grande come nel deck */
 .segs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;height:8px}
-.segs span{border-radius:4px;background:var(--soft)}
+.segs span{border-radius:4px;background:var(--mist)}
 .segs span.done{background:var(--ochre)}
 .bigname{font-family:var(--display);font-weight:700;font-size:clamp(2.3rem,11vw,3.4rem);line-height:1.05;overflow-wrap:anywhere;color:var(--petrol)}
 .bigtime{font-family:var(--display);font-weight:700;font-size:clamp(5rem,28vw,8rem);line-height:1;color:var(--green)}
@@ -407,6 +409,7 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
       </div>
       <div class="pbar" aria-hidden="true"><i id="prog"></i></div>
       <p class="sr" aria-live="polite" id="live"></p>
+      <label class="voiceline" id="voiceRow"><input type="checkbox" id="voiceOn" checked> La voce ti guida</label>
       <div class="ctrl">
         <button class="btn" id="bSkip" hidden>Salta</button>
         <button class="btn" id="bPause">Pausa</button>
@@ -414,11 +417,15 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
       </div>
     </div>
 
-    <div id="sxAfter" class="box" hidden>
+    <div id="sxAfter" class="sx" hidden>
+      <div><p class="group-h">La tua pausa</p><h2>Fatto</h2></div>
+      <div class="cells" id="sxStats"></div>
+      <div class="box">
       <h3>Come stai dopo la pausa?</h3>
       <div class="range energy"><div class="lbl"><label for="pe">Energia</label><b class="num" id="peVal">5</b></div><input type="range" id="pe" min="0" max="10" value="5"></div>
       <div class="range tension"><div class="lbl"><label for="pt">Tensione</label><b class="num" id="ptVal">5</b></div><input type="range" id="pt" min="0" max="10" value="5"></div>
       <button class="btn primary block" id="sxSave">Salva nel diario</button>
+      </div>
     </div>
   </div>
 </div>
@@ -777,9 +784,14 @@ function openSession(id){
 
 // ---------- Esercizio in corso: Pausa, Salta, Concludi ----------
 function stopTimers(){ if(run){ clearTimeout(run.sub); clearInterval(run.cd); clearInterval(run.prog); } }
+function speak(text){
+  if(!$("voiceOn").checked || !("speechSynthesis" in window)) return;
+  try{ speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text); u.lang="it-IT"; u.rate=0.95;
+    const v=speechSynthesis.getVoices().find(v=>v.lang && v.lang.startsWith("it")); if(v) u.voice=v; speechSynthesis.speak(u); }catch(e){}
+}
 function beginRun(x, totalMs, doneMs){
   stopTimers();
-  run={x,total:totalMs,done:doneMs,t0:performance.now(),paused:false};
+  run={x,total:totalMs,done:doneMs,t0:performance.now(),paused:false,lastIdx:-1};
   const calm=!!x.breath;
   $("session").classList.toggle("night",calm);
   $("sxLabel").hidden=true; $("sxAfter").hidden=true; $("sxRunning").hidden=false;
@@ -790,7 +802,7 @@ function beginRun(x, totalMs, doneMs){
     let i=0;
     const step=()=>{ const p=x.breath[i%x.breath.length], orb=$("orb");
       orb.style.transitionDuration=p.s+"s"; orb.style.transform=`scale(${p.sc})`;
-      let left=Math.ceil(p.s); $("phL").textContent=p.l; $("phN").textContent=left; $("live").textContent=p.l;
+      let left=Math.ceil(p.s); $("phL").textContent=p.l; $("phN").textContent=left; $("live").textContent=p.l; speak(p.l);
       clearInterval(run.cd); run.cd=setInterval(()=>{ left--; if(left>0) $("phN").textContent=left; },1000);
       run.sub=setTimeout(()=>{ i++; if(run && !run.paused) step(); },p.s*1000); };
     step();
@@ -815,8 +827,9 @@ function tickRun(){
       $("seqInfo").textContent=`esercizio ${idx+1} di ${x.seq.length}`;
       [...$("segs").children].forEach((s,k)=>s.className=k<=idx?"done":"");
       $("nextUp").textContent = idx<x.seq.length-1 ? `Poi: ${x.seq[idx+1].l.toLowerCase()}` : "Ultimo esercizio";
-      if($("live").textContent!==x.seq[idx].l) $("live").textContent=x.seq[idx].l;
+      if(run.lastIdx!==idx){ run.lastIdx=idx; $("live").textContent=x.seq[idx].l; speak(x.seq[idx].l); }
     } else {
+      if(run.lastIdx!==0){ run.lastIdx=0; speak(x.name); }
       const left=Math.max(0,Math.ceil((run.total-el)/1000));
       $("bigName").textContent=x.name; $("bigTime").textContent=mmss(left);
       $("seqInfo").textContent=x.dur; $("nextUp").textContent=x.steps[0];
@@ -837,6 +850,16 @@ $("bSkip").addEventListener("click",()=>{
 });
 $("bDone").addEventListener("click",()=>finish());
 function finish(){
+  // riepilogo: tempo fatto davvero ed esercizi raggiunti
+  let cells="";
+  if(run){
+    const el=Math.min(run.total, elapsed()), x=run.x, mins=el/60000;
+    cells+=`<div class="cell"><b class="num">${mins<1?Math.round(el/1000)+" s":fmt(mins).replace(",0","")+" min"}</b><span>DI PAUSA</span></div>`;
+    if(x.seq){ let acc=0,n=0; for(const s of x.seq){ acc+=s.s; if(el/1000>=acc-0.5) n++; } cells+=`<div class="cell"><b class="num">${n} di ${x.seq.length}</b><span>ESERCIZI DELLA SEQUENZA</span></div>`; }
+    if(x.breath){ const cyc=x.breath.reduce((a,p)=>a+p.s,0); cells+=`<div class="cell"><b class="num">${Math.floor(el/1000/cyc)}</b><span>RESPIRI GUIDATI</span></div>`; }
+    speak("Fatto. Ottimo lavoro.");
+  }
+  $("sxStats").innerHTML=cells; $("sxStats").hidden=!cells;
   stopTimers(); run=null;
   $("session").classList.remove("night");
   $("sxRunning").hidden=true; $("sxLabel").hidden=true;
