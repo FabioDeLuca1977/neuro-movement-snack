@@ -747,7 +747,8 @@ function openSession(id){
   $("sxLabel").hidden=false; $("sxRunning").hidden=true; $("sxAfter").hidden=true;
   const box=$("sxStartBox");
   if(x.mins){
-    box.innerHTML=`<div class="row"><label for="sxMin">Durata</label>
+    box.innerHTML=(x.breath?`<a class="btn primary block" href="respiro.html?ex=${x.id}" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:12px;background:var(--calm);border-color:var(--calm)">Guidami con voce e microfono</a>`:"")+
+      `<div class="row"><label for="sxMin">Durata</label>
       <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select></div>
       <button class="btn primary block" id="sxStart" style="margin-top:10px">Inizia</button>`;
     $("sxStart").onclick=()=>beginRun(x, +$("sxMin").value*60000, 0);
