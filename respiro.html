@@ -26,7 +26,8 @@ canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
 .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .back{display:inline-flex;align-items:center;gap:8px;color:var(--ink);text-decoration:none;font-size:1rem;min-height:44px}
 .tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;color:var(--dim)}
-.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;pointer-events:none}
+.panel,.livebar,.top{flex-shrink:0}
+.center{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;pointer-events:none}
 .phase{font-family:var(--display);font-weight:400;font-size:clamp(2.6rem,12vw,4.2rem);line-height:1;letter-spacing:.01em}
 .count{font-family:var(--display);font-weight:700;font-size:clamp(3rem,16vw,5rem);line-height:1}
 .hint{min-height:1.4em;font-size:1.05rem;color:var(--dim);max-width:30ch;margin-top:min(26vw,100px)}
@@ -312,7 +313,8 @@ function draw(now, dt){
   g.fillStyle="#1f4e5f"; g.fillRect(0,0,W,H);
   // l'anello si centra sul testo "Inspira / Espira"
   const pr=$("phase").getBoundingClientRect(), cr=$("count").getBoundingClientRect();
-  const cx=W/2, cy=(pr.top+cr.bottom)/2, R=Math.min(W*0.42, 170);
+  const cb=$("centerBox").getBoundingClientRect();
+  const cx=W/2, cy=S ? (pr.top+cr.bottom)/2 : cb.top+cb.height/2, R=Math.max(60, Math.min(W*0.42, 170, cb.height*0.46));
   let target=0.55, warm=0, prog=0;
   if(S){
     const p=phase(), el=(now-S.phaseT0)/1000; prog=Math.min(1,el/p.s);
