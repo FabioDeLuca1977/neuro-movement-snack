@@ -9,8 +9,8 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Pit Stop">
-<title>Pit Stop</title>
+<meta name="apple-mobile-web-app-title" content="Neuro Snack">
+<title>Neuro Movement Snack</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap">
 <style>
@@ -47,12 +47,18 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,la
 /* Testata: banda petrolio come le copertine */
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);margin:0 calc(-1 * max(16px,env(safe-area-inset-right,0px))) 0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:0}
 .brand{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px));background:var(--petrol);color:#ffffff}
-.brand h1{font-size:1.5rem;display:flex;align-items:center;gap:10px}
+.brandtxt{flex:1;min-width:0}
+.brand h1{font-size:1.12rem;display:flex;align-items:center;gap:9px;line-height:1.1;white-space:nowrap}
+.tagline{font-size:.72rem;letter-spacing:.06em;color:var(--mist);margin:2px 0 0 28px}
+.neuro{background:var(--bg);border-radius:6px;padding:0 12px}
+.neuro summary{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:48px;padding:10px 0;cursor:pointer}
+.neuro summary b{font-family:var(--display);font-size:1.05rem;color:var(--petrol)}
+.neuro summary span{font-size:.75rem;color:var(--green-ink);font-weight:700}
 .brand h1 i{display:none}
-.brand h1::before{content:"";width:18px;height:18px;border-radius:50%;border:3px solid #3fc495;box-sizing:border-box;animation:breathe 10s ease-in-out infinite}
+.brand h1::before{content:"";flex:none;width:18px;height:18px;border-radius:50%;border:3px solid #3fc495;box-sizing:border-box;animation:breathe 10s ease-in-out infinite}
 .voiceline{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-style:italic}
 .voiceline input{width:20px;height:20px;accent-color:var(--green)}
-.brand .next{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);text-align:right}
+.brand .next{flex:none;font-size:.64rem;max-width:7.5rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);text-align:right}
 nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-bottom:1px solid var(--line);padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 nav.tabs button{border:0;background:none;padding:12px 2px 10px;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;min-height:46px}
 nav.tabs button[aria-selected="true"]{color:var(--petrol);border-bottom-color:var(--green)}
@@ -193,7 +199,7 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 <div class="wrap">
   <header class="top">
     <div class="brand">
-      <h1>Pit Stop<i>.</i></h1>
+      <div class="brandtxt"><h1>Neuro Movement Snack</h1><p class="tagline">Pause brevi per il sistema nervoso</p></div>
       <span class="next num" id="hdrNext">PROMEMORIA SPENTO</span>
     </div>
     <nav class="tabs" role="tablist" aria-label="Sezioni">
@@ -208,7 +214,7 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
     <!-- ADESSO -->
     <section class="view" id="view-adesso">
       <div class="alert" id="dueAlert" hidden>
-        <h3>È ora di un pit stop</h3>
+        <h3>È ora di una pausa</h3>
         <p>Fai la micro-pausa da 3 minuti, il protocollo studiato per chi lavora in ufficio. Oppure dimmi come stai.</p>
         <button class="btn primary" data-ex="micro3">Micro-pausa da 3 minuti</button>
       </div>
@@ -330,6 +336,12 @@ ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
         <div class="lstack"><b>Grado</b><span>P protocollo studiato: dose e struttura vengono da un trial.<br>A adattato da un protocollo: la fonte esiste, qualcosa è stato reso operativo.<br>E esperienziale: nessun esito misurato, si descrive l'azione.</span></div>
         <div class="lstack"><b>Prova</b><span>●●● buone: revisioni o più studi concordi.<br>●● indizi: studi piccoli o non confermati.<br>● ipotesi: idea da verificare.</span></div>
         <div class="lstack"><b>Livello 2</b><span>Intensità elevata: solo se lo scegli tu, con il via libera dell'azienda e, dove c'è, del medico competente.</span></div>
+      </div>
+      <div class="box">
+        <h3>Cosa succede nel cervello: cosa sappiamo e cosa no</h3>
+        <p>"Neuro" qui vuol dire <b>sistema nervoso</b>: le pause servono a calmarlo (respiro lento, attività vagale) o a riattivarlo. Nessuna pausa "produce" una molecola a comando, e per pause di 1–3 minuti non esistono studi che misurino effetti su serotonina, dopamina o BDNF (verifica V8 di Movement Snack).</p>
+        <p class="muted small">Queste schede spiegano cosa fanno le principali molecole e quali abitudini le influenzano, con il livello di prova. Sono informazioni, non promesse degli esercizi.</p>
+        <div id="neuroList" class="list"></div>
       </div>
       <div class="box">
         <h3>Pause e produttività</h3>
@@ -877,6 +889,31 @@ function closeSession(){ stopTimers(); run=null; $("session").hidden=true; $("se
 $("sxClose").addEventListener("click",closeSession);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("session").hidden) closeSession(); });
 
+// ---------- Info: i neurotrasmettitori, cosa sappiamo e cosa no (dalla tabella del libro, studi verificati) ----------
+const NEURO = [
+  {n:"Dopamina", f:"Spinge a cercare: segnala la ricompensa attesa e l'errore di previsione, non il piacere in sé.", l:"Anticipare qualcosa di gratificante; il sonno protegge i recettori.", s:"Schultz (errore di previsione); Salimpoor 2011 (8 persone); Volkow 2012 (sonno e recettori D2/D3).", p:"Meccanismo: prove buone · Leve: indizi", m:"Il \"digiuno di dopamina\" che resetta il cervello: smentito anche da chi l'ha inventato."},
+  {n:"Serotonina", f:"Stabilità dell'umore. Circa il 90% si produce nell'intestino.", l:"Luce del sole e luce intensa al mattino; evitare carenze di triptofano.", s:"Lambert 2002 (luce e ricambio, correlazione); Golden 2005 (luce intensa nella depressione stagionale); Ruhé 2007.", p:"Luce: prove buone · Resto: indizi", m:"Gli integratori alzano l'umore. 5-HTP e triptofano con antidepressivi sono rischiosi: solo con un medico."},
+  {n:"Endorfine e oppioidi endogeni", f:"Attenuano il dolore e sostengono il legame sociale.", l:"Ridere insieme; attività sincronizzate di gruppo.", s:"Manninen 2017 (PET, 12 persone); Cohen 2010 e Tarr 2015 (sincronia e soglia del dolore).", p:"Indizi", m:"Lo \"sballo del corridore\" dovuto alle endorfine: spiegazione superata."},
+  {n:"Ossitocina", f:"Attaccamento e legame con il gruppo.", l:"Contatto e cura reciproca, dimostrato nei primati (scimpanzé).", s:"Crockford 2013; Nave, Camerer e McCullough 2015 (prove deboli sulla fiducia nell'uomo).", p:"Indizi · Leve nell'uomo non verificate", m:"\"Ormone della fiducia\": le repliche sono scarse."},
+  {n:"Endocannabinoidi", f:"Riducono ansia e dolore.", l:"Esercizio aerobico: probabile base dello \"sballo del corridore\".", s:"Fuss 2015 (topi); Siebers 2021 (63 persone, un solo studio controllato).", p:"Indizi", m:""},
+  {n:"Cortisolo", f:"Mobilita energia per la sfida; ha un picco naturale al risveglio.", l:"Non va alzato o abbassato: conta il ritmo. Utile se acuto, logorante se cronico.", s:"Clow 2004 e Stalder 2016 (picco al risveglio); McEwen 1998 (carico allostatico).", p:"Prove buone", m:"\"Ormone cattivo\" da eliminare. E nessun esercizio di questa app promette di abbassarlo."},
+  {n:"Noradrenalina e adrenalina", f:"Vigilanza, attenzione, prontezza all'azione.", l:"Il freddo la alza molto (1 ora in acqua a 14 °C).", s:"Šrámek 2000: non misura benefici su umore o resilienza.", p:"Indizi", m:"La doccia fredda aumenta resilienza e produttività: non dimostrato."},
+  {n:"Adenosina", f:"Si accumula da svegli e crea la pressione del sonno.", l:"Si smaltisce dormendo; la caffeina la blocca fino a 6 ore prima di dormire.", s:"Porkka-Heiskanen 1997 (gatti); Drake 2013 (12 persone).", p:"Meccanismo: prove buone · Dose: indizi", m:"\"Il caffè della sera non mi fa niente\": nello studio le persone non si accorgevano di dormire meno."},
+  {n:"Orexina", f:"Tiene stabile la veglia; la sua assenza causa la narcolessia.", l:"Leve quotidiane non verificate.", s:"Nishino 2000.", p:"Funzione: prove buone · Leve: non verificate", m:""},
+  {n:"Melatonina", f:"Segnala la notte e sincronizza l'orologio biologico.", l:"Buio e luce calda la sera, pochi schermi; luce al mattino.", s:"Chang 2015 (schermi serali, 12 persone).", p:"Luce: prove buone · Cibi: indizi", m:""},
+  {n:"GABA", f:"Il freno principale del cervello: calma.", l:"Yoga (correlazione); probiotici solo nei topi.", s:"Streeter 2010 (34 persone); Bravo 2011 (topi).", p:"Indizi", m:"Il GABA in integratore calma: non è chiaro che arrivi al cervello."},
+  {n:"BDNF", f:"Fattore di crescita, non un neurotrasmettitore: plasticità e ippocampo.", l:"Esercizio aerobico, con sessioni di almeno 10 minuti.", s:"Szuhany 2015 (meta-analisi); Erickson 2011 (programma di un anno).", p:"Esercizio: prove buone", m:"Che una pausa di 2 minuti alzi il BDNF: non ci sono studi su pause così brevi."},
+  {n:"Acetilcolina", f:"Attenzione, apprendimento; freno vagale sul cuore.", l:"Colina utile solo negli over 50 con lievi difficoltà di memoria.", s:"Review 2021–2024 sulla colina.", p:"Indizi", m:"La colina potenzia la memoria a tutte le età."}
+];
+function renderNeuro(){
+  $("neuroList").innerHTML = NEURO.map(x=>`<details class="neuro"><summary><b>${x.n}</b><span>${x.p}</span></summary>
+    <div class="lstack"><b>A cosa serve</b><span>${x.f}</span></div>
+    <div class="lstack"><b>Cosa la muove</b><span>${x.l}</span></div>
+    <div class="lstack"><b>Studi</b><span>${x.s}</span></div>
+    ${x.m?`<div class="lstack"><b>Mito da evitare</b><span>${x.m}</span></div>`:""}</details>`).join("");
+}
+renderNeuro();
+
 // ---------- Diario ----------
 function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
 $("clearExamples").addEventListener("click",()=>clearExamples(false));
@@ -946,8 +983,8 @@ $("notif").addEventListener("change",async()=>{
 });
 const _due = due;
 due = function(){ _due(); if($("notif").checked && "Notification" in window && Notification.permission==="granted"){
-  navigator.serviceWorker?.ready.then(r=>r.showNotification("È ora di un pit stop",{body:"Dimmi come stai e ti propongo l'esercizio adatto.",icon:"icon-192.png",tag:"pitstop"}))
-  .catch(()=>{ try{ new Notification("È ora di un pit stop"); }catch(e){} }); } };
+  navigator.serviceWorker?.ready.then(r=>r.showNotification("È ora di una pausa",{body:"Dimmi come stai e ti propongo l'esercizio adatto.",icon:"icon-192.png",tag:"pitstop"}))
+  .catch(()=>{ try{ new Notification("È ora di una pausa"); }catch(e){} }); } };
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>

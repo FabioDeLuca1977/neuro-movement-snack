@@ -1,4 +1,4 @@
-# Pit Stop
+# Neuro Movement Snack
 
 Prototipo di app per pause brevi basate sugli studi. Ogni esercizio dichiara su quali studi si basa e quanto sono solide le prove.
 
