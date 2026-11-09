@@ -359,12 +359,21 @@ select{max-width:100%}
       <div class="box" id="ambBox">
         <p class="group-h">Per l'ambassador</p>
         <h3>Sessioni di gruppo e indicatori</h3>
-        <p class="muted small">Movement Snack misura il reparto con dati aggregati: partecipazione, continuità, percezione. Nessun dato individuale viene condiviso. Qui registri le pause che conduci; i dati restano su questo telefono.</p>
+        <p class="muted small">Movement Snack usa due famiglie di indicatori, sempre aggregati per reparto: la partecipazione (quante sessioni, quante persone) e la percezione (energia, tensione, dolori posturali). Nessun dato individuale viene condiviso. Qui registri le pause che conduci; i dati restano su questo telefono.</p>
         <div class="row"><label for="ambEx">Pausa</label><select id="ambEx"></select></div>
         <div class="row"><label for="ambN">Partecipanti</label><input type="number" id="ambN" min="1" max="200" value="5" style="font:inherit;width:6rem;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)"><button class="btn primary" id="ambSave">Registra la sessione</button></div>
+        <details class="neuro"><summary><b>Le tue due domande</b><span>Percezione · Giornata 6</span></summary>
+          <p class="muted small">Il manuale chiede di definire due domande da fare sempre a voce dopo le tue sessioni: poche, subito, non burocratiche. Le formuli tu; qui sotto due esempi.</p>
+          <label class="small" for="ambQ1">Domanda 1</label><input type="text" id="ambQ1" class="tinput" style="width:100%" placeholder="Es.: ti senti più sveglio di prima?">
+          <label class="small" for="ambQ2">Domanda 2</label><input type="text" id="ambQ2" class="tinput" style="width:100%" placeholder="Es.: la rifaresti domani?">
+          <div class="row"><label for="ambY1">Sì alla 1</label><input type="number" id="ambY1" min="0" max="200" class="tinput" style="width:5.5rem">
+            <label for="ambY2">Sì alla 2</label><input type="number" id="ambY2" min="0" max="200" class="tinput" style="width:5.5rem"></div>
+          <p class="muted small">Quante persone hanno risposto sì, per alzata di mano. Lascia vuoto se non hai chiesto. Si registrano insieme alla sessione.</p>
+        </details>
         <div class="cells" id="ambCells"></div>
         <div class="tablewrap"><table><thead><tr><th>Giorno</th><th>Pausa</th><th class="n">Persone</th></tr></thead><tbody id="ambList"></tbody></table></div>
         <p id="ambRich"></p>
+        <label class="check small"><input type="checkbox" id="l2Flag"> Il reparto ha il via libera per l'intensità elevata, concordato con l'organizzazione e, dove c'è, con il medico competente</label>
         <div class="row"><label for="ambWeeks">Richiamo tra</label><select id="ambWeeks"><option value="4">4 settimane</option><option value="6" selected>6 settimane</option><option value="8">8 settimane</option></select><button class="btn" id="ambSetRich">Fissa il richiamo</button></div>
         <button class="btn" id="ambCopy">Copia il riepilogo di reparto</button>
         <pre id="ambOut" hidden style="white-space:pre-wrap;font-family:var(--mono);font-size:.8rem"></pre>
@@ -377,7 +386,7 @@ select{max-width:100%}
         <details class="neuro"><summary><b>Risposte alle resistenze</b><span>Giornata 4</span></summary>
           <div class="lstack"><b>«Preferisco riposarmi»</b><span>C'è un modo di recuperare che funziona meglio del riposo passivo: il respiro guidato (MS 4.2).</span></div>
           <div class="lstack"><b>«Non ho tempo»</b><span>Proponi la versione da un minuto.</span></div>
-          <div class="lstack"><b>«Mi sento ridicolo»</b><span>Normalizza l'imbarazzo: il 28% dei partecipanti allo studio PAW lo indica tra le barriere principali. Si fa tutti insieme, nessuno da solo.</span></div>
+          <div class="lstack"><b>«Mi sento ridicolo»</b><span>Normalizza l'imbarazzo: nel trial sulla micro-pausa oraria (BMC 2026, scheda 3.4) il 28% dei partecipanti indica l'imbarazzo a muoversi in open space tra le barriere. Si fa tutti insieme, nessuno da solo.</span></div>
           <div class="lstack"><b>«Non è il mio ruolo»</b><span>Coinvolgi i responsabili: il loro esempio visibile conta.</span></div>
         </details>
       </div>
@@ -392,7 +401,16 @@ select{max-width:100%}
         <div class="lstack"><b>Direzione</b><span><i class="dot" style="background:var(--calm)"></i>Calmare · <i class="dot" style="background:var(--act)"></i>Attivare · <i class="dot" style="background:var(--neu)"></i>Neutra. In quale stato proporre l'esercizio.</span></div>
         <div class="lstack"><b>Grado</b><span>P protocollo studiato: dose e struttura vengono da un trial.<br>A adattato da un protocollo: la fonte esiste, qualcosa è stato reso operativo.<br>E esperienziale: nessun esito misurato, si descrive l'azione.</span></div>
         <div class="lstack"><b>Prova</b><span>●●● buone: revisioni o più studi concordi.<br>●● indizi: studi piccoli o non confermati.<br>● ipotesi: idea da verificare.</span></div>
-        <div class="lstack"><b>Intensità elevata</b><span>Solo se la scegli tu, con il via libera dell'azienda e, dove c'è, del medico competente.</span></div>
+        <div class="lstack"><b>Intensità elevata</b><span>Solo se la scegli tu, mai proposta a una persona nominata. Richiede il via libera dell'organizzazione e, dove c'è, del medico competente. Esclusa da scuole, welfare e operatori indipendenti.</span></div>
+      </div>
+      <div class="box">
+        <h3>Il kit di continuità</h3>
+        <p class="muted small">Sono gli elementi che hanno tenuto l'aderenza all'82% per 12 settimane nel trial sulla micro-pausa oraria (BMC 2026). Non dipendono dall'ambassador: funzionano anche se cambia reparto.</p>
+        <div class="lstack"><b>Scheda illustrata alla postazione</b><span>Con la sequenza scelta, non l'intero catalogo. Nel trial era plastificata, una per persona. L'app non la sostituisce: stampala dal catalogo.</span></div>
+        <div class="lstack"><b>Promemoria ricorrente</b><span>Nel trial, una sveglia oraria sul telefono. Qui: il promemoria in "Adesso" e le pause nel calendario.</span></div>
+        <div class="lstack"><b>Foglio di registrazione</b><span>Dove segnare le pause fatte. Qui: il Diario.</span></div>
+        <div class="lstack"><b>Contatto periodico breve</b><span>Nel trial, un messaggio a settimana e una telefonata di controllo. Può farlo l'ambassador, ma non deve dipendere solo da lui.</span></div>
+        <div class="lstack"><b>Sessione iniziale di avvio</b><span>Il dossier di progetto aggiunge un quinto elemento: nel trial, 45 minuti di dimostrazione e pratica. Nel percorso è coperta dalle giornate di formazione.</span></div>
       </div>
       <div class="box">
         <h3>Cosa succede nel cervello: cosa sappiamo e cosa no</h3>
@@ -448,9 +466,10 @@ select{max-width:100%}
         <p class="mono" id="sxCode"></p>
       </div>
       <div class="note" id="sxL2" hidden><p><b>Intensità elevata: prima di iniziare</b></p>
-        <p>Fallo solo se lo scegli tu e ti senti bene. Se hai problemi di cuore o di pressione, sei in gravidanza, hai dolori alle articolazioni o non fai attività da tempo, chiedi prima al medico (in azienda, al medico competente).</p>
-        <p><b>Fermati subito</b> se senti dolore o peso al petto, capogiro, fiato corto fuori dal normale o battito irregolare.</p>
-        <label class="check small"><input type="checkbox" id="sxOk"> Ho letto e mi sento bene</label></div>
+        <p>Regola di Movement Snack: si sceglie da sé, mai proposta a una persona nominata, e richiede il via libera dell'organizzazione e, dove c'è, del medico competente.</p>
+        <p id="l2No"><b>Non ancora abilitata.</b> L'abilitazione la attiva l'ambassador o il referente, nel Diario, quando il reparto ha il via libera.</p>
+        <p class="small">Prudenza generale (indicazione dell'app, non dei documenti di Movement Snack): fermati subito se senti dolore o peso al petto, capogiro, fiato corto fuori dal normale o battito irregolare.</p>
+        <label class="check small" id="l2Me"><input type="checkbox" id="sxOk"> La scelgo io e mi sento bene</label></div>
       <div id="sxStartBox"></div>
       <div>
         <h3 style="margin-bottom:6px">Come si fa</h3>
@@ -515,7 +534,7 @@ const EX = [
    dose:"Circa 4,5–7 respiri al minuto. 1 minuto = 6 cicli; 3 minuti = pratica completa.",
    say:"Aumenta la variabilità cardiaca e favorisce l'attività vagale: è il modo più documentato per abbassare l'attivazione.",
    nosay:"«Abbassa il cortisolo», «riequilibra le energie».",
-   src:[["Revisione sistematica con meta-analisi su respiro lento, frequenza cardiaca e HRV. Neuroscience & Biobehavioral Reviews, 2022.","good"],["Zaccaro e colleghi, 2018: revisione di 15 studi sul respiro lento.","good"]],
+   src:[["Revisione sistematica con meta-analisi su respiro lento, frequenza cardiaca e HRV. Neuroscience & Biobehavioral Reviews, 2022.","good"],["Zaccaro e colleghi, 2018: revisione di 15 studi sul respiro lento.","good"],["Goessl, Curtiss e Hofmann, 2017. Psychol Med 47:2578-2586: meta-analisi sul biofeedback HRV a circa 6 respiri al minuto, con sensore (24 studi, 484 persone). Riduzione ampia di stress e ansia riferiti.","good"]],
    when:"Dopo una riunione difficile, una telefonata tesa, una scadenza."},
   {id:"guidato", code:"MS 4.2", group:"Calmare", dir:"Calmare", lvl:1, grade:"A", name:"Respiro guidato dopo un momento stressante", dur:"3–5 min", mins:[3,5],
    steps:["Fallo subito dopo l'evento, non ore dopo.","Segui il cerchio: la guida esterna fa parte del protocollo.","Inspira 4 secondi, espira 6."],
@@ -541,7 +560,15 @@ const EX = [
    say:"È l'unico RCT su lavoratori d'ufficio a 12 settimane: migliorano glicemia e HOMA-IR, l'aderenza resta all'82% e la produttività percepita migliora (+1,3 su 10).",
    nosay:"Effetti su collo e spalle (nessuna differenza nello studio); dati su peso e colesterolo. Riserve: studio monocentrico, campione in media sovrappeso.",
    src:[["Micro-exercise breaks every hour. BMC Public Health 2026;26:763. DOI 10.1186/s12889-026-26484-4.","good"]],
+   warn:"Nel trial nessun evento avverso serio; indolenzimento passeggero nel 12,5% e fastidio al ginocchio nel 5%, risolti in 1–2 settimane. La frequenza oraria va concordata con il responsabile di reparto.",
    when:"È il protocollo del promemoria orario."},
+  {id:"promem", code:"MS 3.5", group:"Attivare", dir:"Attivare", lvl:1, grade:"P", name:"Snack a corpo libero con promemoria", dur:"30–60 s", mins:[1],
+   steps:["Quando arriva il promemoria, alzati.","30–60 secondi di esercizi a corpo libero a tua scelta, a intensità contenuta.","Dove i telefoni non sono ammessi, va bene un promemoria su carta o concordato con il gruppo."],
+   dose:"Studiata: 3 sessioni al giorno, 3 giorni a settimana, per 12 settimane. È già il formato minimo: la leva non è la dose ma la regolarità del promemoria.",
+   say:"«In condizioni reali, con il solo supporto di un promemoria digitale, l'aderenza è stata del 97% su dodici settimane.»",
+   nosay:"Esiti metabolici o muscolari: è uno studio di fattibilità. Che un'app sostituisca chi conduce.",
+   src:[["Babir e colleghi, 2025. Scand J Med Sci Sports 35:e70117. Studio randomizzato di fattibilità, 77 partecipanti. Grado P sulla fattibilità e sull'aderenza.","good"]],
+   when:"Ogni volta che suona il promemoria."},
   {id:"cammino", code:"MS 3.1 · PS", group:"Attivare", dir:"Attivare (leggero)", lvl:1, grade:"P", name:"Cammino breve", dur:"2–5 min", mins:[2,5],
    steps:["Cammina a passo da leggero a moderato.","Nessuna attrezzatura, nessun cambio d'abito."],
    dose:"Studiato: 2 minuti ogni 20 minuti. In ufficio: 2 minuti ogni 30 minuti nel pomeriggio.",
@@ -590,6 +617,7 @@ const EX = [
    say:"È il formato più studiato. La condizione cardiorespiratoria è l'unico esito del campo con certezza moderata.",
    nosay:"«Brucia calorie», «rinforza le gambe».",
    src:[["Jenkins e colleghi, 2019. Appl Physiol Nutr Metab 44(6):681-684.","good"],["Meta-analisi BJSM 2025: 11 trial, 414 partecipanti, certezza moderata.","good"]],
+   warn:"Scala percorribile in sicurezza, corrimano verificato. Non con dispositivi di protezione ingombranti o calzature antinfortunistiche pesanti.",
    when:"Calo di vigilanza a metà mattina o nel primo pomeriggio."},
   {id:"corsa", code:"MS 1.3", group:"Attivare", dir:"Attivare (intenso)", lvl:2, grade:"A", name:"Corsa sul posto, 1 minuto", dur:"1 min, 3 volte al giorno", mins:[1],
    steps:["Un minuto di corsa sul posto a intensità vigorosa.","Ripeti tre volte nella giornata."],
@@ -597,6 +625,7 @@ const EX = [
    say:"Prima misura oggettiva sulla lucidità in questo formato (Trail Making e Stroop). È uno studio pilota su 25 impiegati.",
    nosay:"Che sia acquisito; che valga anche per una marcia leggera.",
    src:[["Mues, Flohr e Kurpiers, 2025. Sports 13(6):186. Studio pilota randomizzato.","warn"]],
+   warn:"Serve spazio per il movimento e calzature adeguate. Gli autori segnalano che lo sforzo elevato è il principale limite in ufficio.",
    when:"Calo di lucidità e attenzione."},
   // NEUTRA
   {id:"fly", code:"MS 2.1", group:"Collo e spalle", dir:"Neutra", lvl:1, grade:"A", name:"Reverse fly con elastico", dur:"1–5 min", mins:[1,3,5],
@@ -651,10 +680,10 @@ const EX = [
    src:[["Chang e colleghi, 2015. Studio controllato su 12 persone.","warn"]],
    when:"Ogni sera."},
   // SPERIMENTARE
-  {id:"esperimento", code:"PS · MS 3.5", group:"Sperimentare", dir:"Misurare", lvl:1, grade:"E", name:"Esperimento di 2 settimane", dur:"14 giorni", exp:true,
+  {id:"esperimento", code:"PS", group:"Sperimentare", dir:"Misurare", lvl:1, grade:"E", name:"Esperimento di 2 settimane", dur:"14 giorni", exp:true,
    steps:["Scegli un solo esercizio.","Praticalo ogni giorno per 2 settimane.","Ogni sera segna energia, tensione e dolore nel Diario.","Confronta con le 2 settimane precedenti."],
    dose:"14 giorni.",
-   say:"Promemoria e registrazione sono due dei quattro componenti che, negli studi, mantengono alta l'aderenza.",
+   say:"Promemoria e registrazione sono due elementi del kit di continuità, ricavati dal trial sulla micro-pausa oraria (aderenza all'82% per 12 settimane).",
    nosay:"Che il confronto su di sé dimostri un effetto.",
    src:[["Babir e colleghi, 2025. Scand J Med Sci Sports 35:e70117: con il solo promemoria digitale aderenza del 97% su 12 settimane (studio di fattibilità).","good"],["Il confronto personale prima/dopo è un'ipotesi progettuale.","hyp"]],
    when:"Quando vuoi capire cosa funziona per te."}
@@ -680,9 +709,9 @@ EX.push(
 // ---------- Sistema nervoso e molecole: cosa è misurato per ogni esercizio ----------
 // ev: "short" = misurato in pause brevi · "other" = misurato solo in formati più lunghi o in laboratorio · "none" = non misurato
 const NEUROMAP = {
-  respiro:{t:"Sistema nervoso autonomo, ramo vagale: il respiro lento aumenta la variabilità cardiaca.", m:"Acetilcolina (mediatore del freno vagale): non misurata negli studi sul respiro.", ev:"short", links:[["Acetilcolina",0]]},
-  guidato:{t:"Ramo vagale: dopo uno stress il recupero della variabilità cardiaca (RMSSD) è migliore del riposo passivo.", m:"Acetilcolina: non misurata.", ev:"short", links:[["Acetilcolina",0]]},
-  sospiro:{t:"Sistema nervoso autonomo: nello studio sono migliorati umore e ansia riferiti.", m:"Nessuna molecola misurata.", ev:"short", links:[]},
+  respiro:{t:"Sistema nervoso autonomo, ramo vagale: il respiro lento aumenta la variabilità cardiaca.", m:"Acetilcolina: è il mediatore del freno vagale, ma il legame diretto con il respiro lento non è verificato (❔) e negli studi non è misurata.", ev:"short", links:[["Acetilcolina",0]]},
+  guidato:{t:"Ramo vagale: dopo uno stress il recupero della variabilità cardiaca (RMSSD) è migliore del riposo passivo.", m:"Acetilcolina: legame diretto con il respiro non verificato (❔), non misurata.", ev:"short", links:[["Acetilcolina",0]]},
+  sospiro:{t:"Sistema nervoso autonomo: nello studio sono migliorati l'umore riferito e la frequenza respiratoria.", m:"Nessuna molecola misurata.", ev:"short", links:[]},
   micro3:{t:"Muscolo e metabolismo: migliorano glicemia e sensibilità all'insulina.", m:"Insulina e glucosio sono un ormone e uno zucchero, non neurotrasmettitori.", ev:"short", links:[]},
   cammino:{t:"Muscolo e metabolismo: migliora la risposta all'insulina dopo i pasti.", m:"Nessun neurotrasmettitore misurato.", ev:"short", links:[]},
   activity:{t:"Muscolo: aumenta l'uso degli aminoacidi durante la seduta prolungata.", m:"Nessun neurotrasmettitore misurato.", ev:"short", links:[]},
@@ -690,11 +719,12 @@ const NEUROMAP = {
   talloni:{t:"Muscolo del polpaccio (soleo): meccanismo metabolico studiato in laboratorio.", m:"Nessun neurotrasmettitore misurato.", ev:"other", links:[]},
   pausa:{t:"Vigore e fatica riferiti dalle persone.", m:"Nessuna molecola misurata.", ev:"short", links:[]},
   luce:{t:"Orologio biologico: la luce del mattino regola il ritmo sonno-veglia.", m:"Melatonina, serotonina e ritmo del cortisolo: prove con luce intensa e nella depressione stagionale, non con 10 minuti all'aperto in persone sane.", ev:"other", links:[["Melatonina",0],["Serotonina",0],["Cortisolo",0]]},
-  scale:{t:"Sistema cardiorespiratorio: migliora la condizione fisica in settimane.", m:"Noradrenalina e adrenalina salgono con lo sforzo intenso, ma non sono misurate in questi studi.", ev:"none", links:[["Noradrenalina e adrenalina",0]]},
+  scale:{t:"Sistema cardiorespiratorio: migliora la condizione fisica in settimane.", m:"Nessuna molecola misurata negli studi su questo formato.", ev:"none", links:[]},
   corsa:{t:"Funzioni esecutive: migliorano memoria di lavoro, velocità e controllo (Trail Making, Stroop), in uno studio pilota.", m:"Dopamina, noradrenalina e BDNF non sono misurati; il BDNF è dimostrato solo con sessioni aerobiche di almeno 10 minuti.", ev:"short", links:[["Dopamina",0],["Noradrenalina e adrenalina",0],["BDNF",0]]},
   fly:{t:"Muscoli di collo e spalle: diminuisce il dolore riferito.", m:"Effetto sul muscolo e sul dolore, non su un neurotrasmettitore.", ev:"short", links:[]},
   shrug:{t:"Muscoli di collo e spalle: diminuisce il dolore riferito.", m:"Effetto sul muscolo e sul dolore, non su un neurotrasmettitore.", ev:"short", links:[]},
   resist:{t:"Muscolo: aumenta la massa muscolare in 12 settimane.", m:"Nessun neurotrasmettitore misurato.", ev:"short", links:[]},
+  promem:{t:"Nessun effetto sul sistema nervoso misurato: lo studio misura fattibilità e aderenza.", m:"Nessuna molecola misurata.", ev:"none", links:[]},
   sitstand:{t:"Forza e funzione delle gambe negli over 60.", m:"Nessun neurotrasmettitore misurato.", ev:"short", links:[]},
   gruppo:{t:"Comportamento di gruppo: cresce la partecipazione quando qualcuno conduce.", m:"Non si dice che rilasci endorfine, serotonina o ossitocina.", ev:"short", links:[]},
   ritmo:{t:"Legame di gruppo: la sincronia alza la soglia del dolore, un indicatore indiretto degli oppioidi endogeni.", m:"Endorfine e oppioidi: indizi da esperimenti di laboratorio, non da pause al lavoro.", ev:"other", links:[["Endorfine e oppioidi endogeni",0]]},
@@ -703,7 +733,7 @@ const NEUROMAP = {
   sera:{t:"Orologio biologico.", m:"Melatonina: la luce degli schermi la sopprime (12 persone).", ev:"other", links:[["Melatonina",1]]},
   esperimento:{t:"Ti aiuta a capire cosa funziona per te, con i tuoi dati.", m:"Nessuna molecola: misuri energia, tensione e dolore riferiti.", ev:"none", links:[]}
 };
-const NEV = {short:"Misurato in pause brevi", other:"Misurato solo in altri formati o in laboratorio", none:"Non misurato"};
+const NEV = {short:"Effetto misurato in pause brevi", other:"Effetto misurato solo in altri formati o in laboratorio", none:"Effetto sul sistema nervoso non misurato"};
 
 // ---------- Repertorio Movement Snack: 44 voci per la varietà, nessuna promessa ----------
 const REPSRC = {F3:"UNIFIT, Università di Bologna (studio pilota)", F4:"ASEBP, Daily Exercises and Stretching Snacks Guide", F5:"CDC, Physical Activity Breaks for the Workplace", F6:"Frontiers in Public Health 2026, rassegna narrativa"};
@@ -756,7 +786,7 @@ const REP = [
 const REPDIR = {a:"Attivare", c:"Calmare", g:"Formato di gruppo"};
 
 function neuroRow(x){ const n=NEUROMAP[x.id]; if(!n) return "";
-  return `<div class="lstack"><b>Sistema nervoso e molecole</b><span>${n.t}</span><span>${n.m}</span><span class="nev ${n.ev}">${NEV[n.ev]}</span></div>`; }
+  return `<div class="lstack"><b>Sistema nervoso e molecole</b><span>${n.t}</span><span>${n.m}</span><span class="nev ${n.ev}">${NEV[n.ev]}</span><span class="muted small">L'etichetta riguarda l'effetto descritto sopra, non le molecole.</span></div>`; }
 const EVLABEL = {good:"Buone", warn:"Indizi", hyp:"Ipotesi"};
 const EVDOTS = {good:"●●●", warn:"●●", hyp:"●"};
 const GRADE = {P:"Protocollo studiato", A:"Adattato", E:"Esperienziale", "P/A":"Protocollo / adattato"};
@@ -881,13 +911,14 @@ $("suggestBtn").addEventListener("click",()=>{
     extra+=`<p class="note">Hai scelto "${AREAS[area].l}", ma la tensione è alta: prima si calma, poi si attiva. Proporre un esercizio attivante adesso darebbe solo fastidio.</p>`;
     area="tens";
   }
-  if(seated){ ids=["talloni","respiro"]; reason="Non puoi alzarti: due esercizi da seduti, invisibili agli altri."; }
+  if(seated && tense){ ids=["respiro","guidato"]; reason="Non puoi alzarti e la tensione è alta: prima si calma, con il respiro da seduti. I talloni attivano, quindi non te li proponiamo adesso."; }
+  else if(seated){ ids=["talloni","respiro"]; reason="Non puoi alzarti: due esercizi da seduti, invisibili agli altri."; }
   else if(area==="tens"){ ids = stress?["guidato","respiro","sospiro"]:["respiro","guidato","sospiro"]; reason = stress ? "Dopo un momento stressante il recupero guidato funziona meglio del riposo passivo." : "Tensione e stress: la direzione è calmare."; }
   else if(area==="neck"){ ids=["fly","shrug","resist"]; reason="Collo e spalle: direzione neutra, con lo studio più solido del progetto (Andersen 2011). Il beneficio arriva aumentando piano la resistenza dell'elastico."; }
   else if(area==="meal"){ ids=["cammino","corpo","micro3"]; reason="Dopo i pasti: pochi minuti di cammino migliorano la risposta all'insulina."; }
   else if(area==="vig"){ ids = morning?["activity","luce","micro3"]:["activity","micro3","cammino"]; reason="Vigilanza e lucidità: serve attivare.";
-    extra+=`<p class="muted small">Il formato più studiato per la lucidità è a intensità elevata (scale, corsa sul posto): non te lo proponiamo, ma puoi sceglierlo tu dagli Esercizi.</p>`; }
-  else if(area==="fiato"){ ids=["cammino","micro3"]; reason="Per il fiato l'unico protocollo con prove è lo snack di scale, a intensità elevata: non te lo proponiamo, ma lo trovi negli Esercizi se vuoi sceglierlo tu. Intanto, qualcosa a intensità libera.";
+    extra+=`<p class="muted small">L'unica misura oggettiva della lucidità in queste pause viene dalla corsa sul posto, a intensità elevata: non te la proponiamo, ma puoi sceglierla tu dagli Esercizi, se l'azienda ha dato il via libera.</p>`; }
+  else if(area==="fiato"){ ids=["cammino","sitstand","micro3"]; reason="Per il fiato Movement Snack ha due protocolli: lo snack di scale, a intensità elevata (non te lo proponiamo: si sceglie da sé e serve il via libera dell'azienda), e alzarsi dalla sedia (MS 5.2, intensità libera), pensato per gli over 60 e per chi non può usare le scale. Intanto, qualcosa a intensità libera.";
     extra+=`<div class="list">${itemHTML(byId.scale)}</div>`; }
   else if(area==="umore"){ ids=["gruppo","ritmo","ridere"]; reason="Umore e coinvolgimento: conta chi conduce. Si invita, non si ordina."; }
   else { ids=["micro3","pausa","cammino"]; reason="Stai abbastanza bene: la micro-pausa da 3 minuti è il protocollo studiato per mantenere l'energia."; }
@@ -990,7 +1021,7 @@ function fullRows(x){
     <div class="lstack"><b>Dose studiata</b><span>${x.dose}</span></div>
     <div class="lstack"><b>Quando</b><span>${x.when}</span></div>
     <div class="lstack"><b>Cosa si può dire</b><span>${x.say}</span></div>
-    <div class="lstack"><b>Non promette</b><span>${x.nosay}</span></div>
+    <div class="lstack"><b>Non promette</b><span>${x.nosay}</span></div>${x.warn?`<div class="lstack"><b>Sicurezza</b><span>${x.warn}</span></div>`:""}
     <div class="lstack"><b>Fonti</b>${x.src.map(s=>`<span>${EVDOTS[s[1]]} ${s[0]}</span>`).join("")}</div>`+neuroRow(x);
 }
 function openSession(id){
@@ -1011,7 +1042,8 @@ function openSession(id){
       <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select></div>
       <button class="btn primary block" id="sxStart" style="margin-top:10px">Inizia</button>`;
     $("sxStart").onclick=()=>beginRun(x, +$("sxMin").value*60000, 0);
-    if(x.lvl===2){ $("sxOk").checked=false; $("sxStart").disabled=true; $("sxOk").onchange=()=>{ $("sxStart").disabled=!$("sxOk").checked; }; }
+    if(x.lvl===2){ const ok=!!S.l2ok; $("l2No").hidden=ok; $("l2Me").hidden=!ok; $("sxOk").checked=false; $("sxStart").disabled=true;
+      $("sxOk").onchange=()=>{ $("sxStart").disabled=!(ok && $("sxOk").checked); }; }
   } else if(x.habit==="caffe"){
     box.innerHTML=`<div class="box thin"><label for="bed">A che ora vai a dormire?</label><input type="time" id="bed" value="23:00" style="font:inherit;min-height:44px;padding:0 8px;border:2px solid var(--line);background:var(--surface);color:var(--fg)">
       <p id="lastCoffee" class="num" style="font-size:1.3rem"></p></div>`;
@@ -1142,7 +1174,7 @@ const NEURO = [
   {n:"Melatonina", f:"Segnala la notte e sincronizza l'orologio biologico.", l:"Buio e luce calda la sera, pochi schermi; luce al mattino.", s:"Chang 2015 (schermi serali, 12 persone).", p:"Luce: prove buone · Cibi: indizi", m:""},
   {n:"GABA", f:"Il freno principale del cervello: calma.", l:"Yoga (correlazione); probiotici solo nei topi.", s:"Streeter 2010 (34 persone); Bravo 2011 (topi).", p:"Indizi", m:"Il GABA in integratore calma: non è chiaro che arrivi al cervello."},
   {n:"BDNF", f:"Fattore di crescita, non un neurotrasmettitore: plasticità e ippocampo.", l:"Esercizio aerobico, con sessioni di almeno 10 minuti.", s:"Szuhany 2015 (meta-analisi); Erickson 2011 (programma di un anno).", p:"Esercizio: prove buone", m:"Che una pausa di 2 minuti alzi il BDNF: non ci sono studi su pause così brevi."},
-  {n:"Acetilcolina", f:"Attenzione, apprendimento; freno vagale sul cuore.", l:"Colina utile solo negli over 50 con lievi difficoltà di memoria.", s:"Review 2021–2024 sulla colina.", p:"Indizi", m:"La colina potenzia la memoria a tutte le età."}
+  {n:"Acetilcolina", f:"Attenzione, apprendimento; freno vagale sul cuore.", l:"Colina utile solo negli over 50 con lievi difficoltà di memoria. Il legame diretto con la respirazione lenta non è verificato.", s:"Review 2021–2024 sulla colina.", p:"Indizi", m:"La colina potenzia la memoria a tutte le età."}
 ];
 function renderNeuro(){
   $("neuroList").innerHTML = NEURO.map(x=>`<details class="neuro"><summary><b>${x.n}</b><span>${x.p}</span></summary>
@@ -1154,7 +1186,7 @@ function renderNeuro(){
 renderNeuro();
 
 // ---------- Diario ----------
-function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null,amb:S.amb}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
+function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null,amb:S.amb,l2ok:S.l2ok}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
 $("clearExamples").addEventListener("click",()=>clearExamples(false));
 $("saveDay").addEventListener("click",()=>{
   if(S.example) clearExamples(true);
@@ -1246,12 +1278,16 @@ function renderAmb(){
   const a=amb(), now=new Date();
   $("ambEx").innerHTML = EX.filter(x=>x.mins && x.lvl!==2).map(x=>`<option value="${x.id}">${x.name}</option>`).join("");
   const n=a.sessions.length, people=a.sessions.reduce((s,x)=>s+x.n,0);
-  const weeks=new Set(a.sessions.map(x=>{ const d=new Date(x.d); const j=new Date(d.getFullYear(),0,1); return d.getFullYear()+"-"+Math.ceil(((d-j)/864e5+j.getDay()+1)/7); })).size;
   const first=a.sessions.length? new Date(a.sessions.map(x=>x.d).sort()[0]) : null;
-  const spanW = first ? Math.max(1, Math.ceil((now-first)/(7*864e5))) : 0;
+  const wk=d=>Math.floor((new Date(d)-first)/(7*864e5));
+  const weeks=new Set(a.sessions.map(x=>wk(x.d))).size;
+  const spanW = first ? Math.max(weeks, wk(iso(now))+1) : 0;
   $("ambCells").innerHTML = `<div class="cell"><b class="num">${n}</b><span>SESSIONI CONDOTTE</span></div>
     <div class="cell"><b class="num">${n?fmt(people/n):"–"}</b><span>PARTECIPANTI IN MEDIA</span></div>
-    <div class="cell"><b class="num">${n?weeks+" su "+spanW:"–"}</b><span>SETTIMANE CON ALMENO UNA PAUSA</span></div>`;
+    <div class="cell"><b class="num">${n?weeks+" su "+spanW:"–"}</b><span>SETTIMANE CON ALMENO UNA PAUSA</span></div>`+
+    [1,2].map(k=>{ const s=a.sessions.filter(x=>x["y"+k]!=null); const yes=s.reduce((t,x)=>t+x["y"+k],0), tot=s.reduce((t,x)=>t+x.n,0);
+      return tot?`<div class="cell"><b class="num">${Math.round(yes/tot*100)}%</b><span>SÌ ALLA DOMANDA ${k}</span></div>`:""; }).join("");
+  $("l2Flag").checked=!!S.l2ok; $("ambQ1").value=a.q1||""; $("ambQ2").value=a.q2||"";
   const r=a.richiamo ? Math.ceil((new Date(a.richiamo)-now)/864e5) : null;
   $("ambRich").textContent = r===null ? "Nessun richiamo fissato. Movement Snack prevede un incontro di richiamo ogni 4–8 settimane." :
     (r>0 ? `Prossimo richiamo tra ${r} giorni (${new Date(a.richiamo).toLocaleDateString("it-IT",{day:"numeric",month:"long"})}).` : "Il richiamo è oggi o è già passato: fissane uno nuovo.");
@@ -1259,12 +1295,17 @@ function renderAmb(){
 }
 $("ambSave").addEventListener("click",()=>{
   const n=Math.max(1,Math.min(200,+$("ambN").value||0));
-  amb().sessions.push({d:iso(new Date()), ex:$("ambEx").value, n}); save(); renderAmb(); toast("Sessione registrata");
+  const y=k=>{ const v=$("ambY"+k).value; return v==="" ? null : Math.max(0,Math.min(n,+v)); };
+  amb().sessions.push({d:iso(new Date()), ex:$("ambEx").value, n, y1:y(1), y2:y(2)}); $("ambY1").value=""; $("ambY2").value="";
+  save(); renderAmb(); toast("Sessione registrata");
 });
+$("l2Flag").addEventListener("change",()=>{ S.l2ok=$("l2Flag").checked; save(); toast(S.l2ok?"Intensità elevata abilitata su questo telefono":"Intensità elevata disattivata"); });
+["ambQ1","ambQ2"].forEach((id,i)=>$(id).addEventListener("change",()=>{ amb()["q"+(i+1)]=$(id).value.trim(); save(); }));
 $("ambSetRich").addEventListener("click",()=>{ amb().richiamo = iso(addDays(new Date(), +$("ambWeeks").value*7)); save(); renderAmb(); toast("Richiamo fissato"); });
 $("ambCopy").addEventListener("click",async()=>{
   const a=amb(), n=a.sessions.length, people=a.sessions.reduce((s,x)=>s+x.n,0);
-  const txt=`Neuro Movement Snack · riepilogo di reparto\nSessioni condotte: ${n}\nPartecipanti in media: ${n?fmt(people/n):"–"}\nDati aggregati, nessun dato individuale.`;
+  const pct=k=>{ const s=a.sessions.filter(x=>x["y"+k]!=null), tot=s.reduce((t,x)=>t+x.n,0); return tot ? `\n${a["q"+k]||"Domanda "+k}: ${Math.round(s.reduce((t,x)=>t+x["y"+k],0)/tot*100)}% sì` : ""; };
+  const txt=`Neuro Movement Snack · riepilogo di reparto\nPartecipazione · sessioni condotte: ${n}, partecipanti in media: ${n?fmt(people/n):"–"}${pct(1)||pct(2)?"\nPercezione":""}${pct(1)}${pct(2)}\nDati aggregati, nessun dato individuale.`;
   try{ await navigator.clipboard.writeText(txt); toast("Riepilogo copiato"); }catch(e){ $("ambOut").textContent=txt; $("ambOut").hidden=false; }
 });
 const _renderDiary = renderDiary;
