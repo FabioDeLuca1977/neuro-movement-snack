@@ -202,6 +202,17 @@ select{max-width:100%}
 .tinput{font:inherit;min-height:44px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
 #sxL2 p{margin:0 0 8px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.rhead{margin:22px 0 8px;display:grid;gap:1px}
+.rhead b{font-family:var(--display);font-size:1.2rem}
+.rhead span{font-size:.74rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.item.soon{opacity:.6;box-shadow:none;border:1px dashed var(--line);background:transparent}
+.item.soon .sq{background:var(--line)}
+.vid{margin:0}
+.vid video{width:100%;max-height:60vh;border-radius:8px;background:#000;display:block}
+.vid figcaption{font-size:.8rem;color:var(--muted);margin-top:4px}
+.vid.soon{display:flex;gap:12px;align-items:center;border:1px dashed var(--line);border-radius:8px;padding:12px 14px;color:var(--muted)}
+.vid.soon span{font-size:1.4rem}
+.vid.soon p{margin:0;font-size:.85rem}
 </style>
 </head>
 <body>
@@ -305,7 +316,7 @@ select{max-width:100%}
     <!-- ESERCIZI -->
     <section class="view" id="view-esercizi" hidden>
       <h2 class="big" data-eyebrow="Movement Snack + Pit Stop">Esercizi</h2>
-      <p class="muted">Movement Snack (MS) e Pit Stop (PS) in un'unica mappa. Ogni esercizio ha la sua etichetta della prova. Quelli segnati INTENSA l'app non li suggerisce mai: li scegli tu, dopo aver letto l'avviso di sicurezza.</p>
+      <p class="muted">Movement Snack (MS) e Pit Stop (PS) in un'unica mappa, ordinata secondo le sei routine del Centro del Loto. Ogni esercizio ha la sua etichetta della prova. Quelli segnati INTENSA l'app non li suggerisce mai: li scegli tu, dopo aver letto l'avviso di sicurezza.</p>
       <div id="allCards"></div>
       <div class="box">
         <h3>Repertorio: 44 voci per variare</h3>
@@ -440,7 +451,7 @@ select{max-width:100%}
       </div>
       <div class="box">
         <h3>Da dove vengono gli esercizi</h3>
-        <p>Le schede MS vengono dal <i>Catalogo dei protocolli</i> di Movement Snack (Centro del Loto · Maieutike, v1.0, luglio 2026), dove ogni fonte è verificata. Le schede PS vengono dal progetto Pit Stop. Le schede di Movement Snack ancora da compilare (4.3, 5.3, 6.2) non sono incluse.</p>
+        <p>Le schede MS vengono dal <i>Catalogo dei protocolli</i> di Movement Snack (Centro del Loto · Maieutike, v1.0, luglio 2026), dove ogni fonte è verificata. Le schede PS vengono dal progetto Pit Stop. Le schede sono ordinate secondo le sei routine del Centro del Loto (Mind Focus, Energy Boost, Metabolismo &amp; Flusso, Postural Reset, Stair Boost, Co-regolazione): le schede MS stanno nella routine della loro area del catalogo, le schede PS sono assegnate dall'app in base alla direzione. Le tre schede di competenza del Centro del Loto (4.3, 5.3, 6.2) sono ancora da compilare e compaiono come «in arrivo», come i video dimostrativi.</p>
       </div>
       <div class="box">
         <h3>Privacy e limiti</h3>
@@ -471,6 +482,7 @@ select{max-width:100%}
         <p class="small">Prudenza generale (indicazione dell'app, non dei documenti di Movement Snack): fermati subito se senti dolore o peso al petto, capogiro, fiato corto fuori dal normale o battito irregolare.</p>
         <label class="check small" id="l2Me"><input type="checkbox" id="sxOk"> La scelgo io e mi sento bene</label></div>
       <div id="sxStartBox"></div>
+      <div id="sxVideo"></div>
       <div>
         <h3 style="margin-bottom:6px">Come si fa</h3>
         <ol class="steps" id="sxSteps"></ol>
@@ -858,6 +870,31 @@ $("pad").addEventListener("click",ev=>{
 ["e","t"].forEach(id=>$(id).addEventListener("input",()=>setPad(+$("e").value,+$("t").value)));
 setPad(5,5);
 
+// ---------- Le sei routine del Centro del Loto ----------
+// Le schede MS stanno nella routine della loro area del catalogo; le schede PS sono assegnate dall'app in base alla direzione.
+const ROUTINES = [
+  {k:"mind",  n:"Mind Focus",           area:"Tensione e stress",         dir:"Calmare"},
+  {k:"energy",n:"Energy Boost",         area:"Vigilanza e lucidità",      dir:"Attivare"},
+  {k:"meta",  n:"Metabolismo & Flusso", area:"Dopo i pasti",              dir:"Attivare, leggero"},
+  {k:"post",  n:"Postural Reset",       area:"Collo e spalle",            dir:"Neutra"},
+  {k:"stair", n:"Stair Boost",          area:"Fiato e condizione fisica", dir:"Attivare, intenso"},
+  {k:"coreg", n:"Co-regolazione",       area:"Umore e coinvolgimento",    dir:"Attivare, insieme"}
+];
+const ROUT = {respiro:"mind", guidato:"mind", sospiro:"mind",
+  activity:"energy", corsa:"energy",
+  cammino:"meta", corpo:"meta", talloni:"meta", micro3:"meta", promem:"meta",
+  fly:"post", shrug:"post", resist:"post",
+  scale:"stair", sitstand:"stair",
+  gruppo:"coreg", ritmo:"coreg", ridere:"coreg"};
+const routineOf = x => ROUTINES.find(r=>r.k===ROUT[x.id]);
+const AREA2R = {tens:"mind", vig:"energy", meal:"meta", neck:"post", fiato:"stair", umore:"coreg"};
+// schede di competenza del Centro del Loto, ancora da compilare
+const COMING = [
+  {r:"mind",  code:"MS 4.3", name:"Movimento lento con respiro coordinato"},
+  {r:"stair", code:"MS 5.3", name:"Tai chi in formato breve"},
+  {r:"coreg", code:"MS 6.2", name:"Pratica di gruppo con componente relazionale"}
+];
+
 // ---------- Elenco esercizi ----------
 function itemHTML(x){
   return `<button class="item" data-ex="${x.id}">
@@ -866,9 +903,12 @@ function itemHTML(x){
     <span class="meta">${x.code} · ${x.dur} · GRADO ${x.grade} · ${EVDOTS[ev(x)]} ${EVLABEL[ev(x)].toUpperCase()}</span></button>`;
 }
 function renderAll(){
-  let html="", g="";
-  EX.forEach(x=>{ if(x.group!==g){ if(g) html+=`</div>`; g=x.group; html+=`<p class="group-h">${g}</p><div class="list">`; } html+=itemHTML(x); });
-  $("allCards").innerHTML = html+`</div>`;
+  const comingHTML = c => `<div class="item soon" aria-disabled="true"><span class="sq" aria-hidden="true"></span>
+    <b>${c.name}<span class="l2tag">IN ARRIVO</span></b><span class="meta">${c.code} · scheda e video dal Centro del Loto</span></div>`;
+  let html = ROUTINES.map(r=>`<div class="rhead"><b>${r.n}</b><span>${r.area} · ${r.dir}</span></div><div class="list">${
+    EX.filter(x=>ROUT[x.id]===r.k).map(itemHTML).join("") + COMING.filter(c=>c.r===r.k).map(comingHTML).join("")}</div>`).join("");
+  html += `<div class="rhead"><b>Altre abitudini di Pit Stop</b><span>Fuori dalle sei routine</span></div><div class="list">${EX.filter(x=>!ROUT[x.id]).map(itemHTML).join("")}</div>`;
+  $("allCards").innerHTML = html;
 }
 renderAll();
 document.addEventListener("click",e=>{ const c=e.target.closest("[data-ex]"); if(c) openSession(c.dataset.ex); });
@@ -926,7 +966,7 @@ $("suggestBtn").addEventListener("click",()=>{
   const first=byId[ids[0]];
   if(heavy) extra+=`<p class="note">Dopo un lavoro molto impegnativo una pausa di pochi minuti può non bastare: se puoi, prenditi più di 10 minuti (Albulescu 2022).</p>`;
   if(t>=8) extra+=`<p class="muted small">Se ti senti così spesso, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>`;
-  const dirTxt = area ? `<p class="group-h">Bisogno: ${AREAS[area].l} · direzione: ${AREAS[area].dir}</p>` : `<p class="group-h">Consigliato ora</p>`;
+  const dirTxt = area ? `<p class="group-h">${ROUTINES.find(r=>r.k===AREA2R[area]).n} · ${AREAS[area].l} · direzione: ${AREAS[area].dir}</p>` : `<p class="group-h">Consigliato ora</p>`;
   const box=$("suggestion");
   box.innerHTML = `${dirTxt}<p>${reason}</p>${shortLabel(first)}
     <button class="btn primary block" data-ex="${first.id}">Inizia</button>
@@ -1014,6 +1054,7 @@ $("calMake").addEventListener("click",()=>{
 let cur=null, run=null;
 function fullRows(x){
   return `<p class="dirline">Etichetta della prova</p><div class="rule"></div>
+    ${routineOf(x)?`<div class="lrow"><b>Routine</b><span>${routineOf(x).n}${x.code==="PS"?" · assegnata dall'app":""}</span></div>`:""}
     <div class="lrow"><b>Direzione</b><span style="color:${dirColor(x)};font-weight:600">${x.dir}</span></div>
     <div class="lrow"><b>Intensità</b><span>${x.lvl===2?"elevata · la scegli tu":"libera"}</span></div>
     <div class="lrow"><b>Grado</b><span>${x.grade} · ${GRADE[x.grade]}</span></div>
@@ -1030,9 +1071,14 @@ function openSession(id){
   $("sxDir").querySelector("i").style.background=dirColor(x);
   $("sxDir").querySelector("span").textContent=x.dir;
   $("sxDir").style.color=dirColor(x);
-  $("sxTitle").textContent=x.name; $("sxCode").textContent=`${x.code} · ${x.dur}${x.team?" · in gruppo":""}`;
+  $("sxTitle").textContent=x.name; $("sxCode").textContent=`${routineOf(x)?routineOf(x).n+" · ":""}${x.code} · ${x.dur}${x.team?" · in gruppo":""}`;
   $("sxL2").hidden = x.lvl!==2;
   $("sxSteps").innerHTML=x.steps.map(s=>`<li>${s}</li>`).join("");
+  // video dimostrativo: i file vanno nella cartella video/ e si indicano nel campo "video" della scheda
+  $("sxVideo").innerHTML = !x.mins ? "" : x.video
+    ? `<figure class="vid"><video src="video/${x.video}" controls playsinline muted loop preload="metadata"></video>
+        <figcaption>Il movimento mostrato dal Centro del Loto. Puoi guardarlo senza audio.</figcaption></figure>`
+    : `<div class="vid soon"><span aria-hidden="true">▶</span><p><b>Video in arrivo</b><br>Il movimento mostrato dal Centro del Loto.</p></div>`;
   $("sxRows").innerHTML=fullRows(x);
   $("sxLabel").hidden=false; $("sxRunning").hidden=true; $("sxAfter").hidden=true;
   const box=$("sxStartBox");
