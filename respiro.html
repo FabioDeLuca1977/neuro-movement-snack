@@ -272,7 +272,8 @@ function tick(now){
   }
 }
 function finish(){
-  const elapsedMin=(performance.now()-S.t0-S.paused)/60000;
+  const pausing=S.pauseAt ? performance.now()-S.pauseAt : 0; // se concludi in pausa, la pausa non conta
+  const elapsedMin=(performance.now()-S.t0-S.paused-pausing)/60000;
   const cycle=P.phases.reduce((a,p)=>a+p.s,0);
   const guided=Math.round(elapsedMin*60/cycle);
   if(an){
