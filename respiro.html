@@ -7,7 +7,7 @@
 <title>Respiro guidato · Neuro Movement Snack</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Respiro guidato: tela a tutto schermo, il corpo al centro, il testo resta in basso. Notte calda, teal per inspirare, ambra per espirare. */
 :root{
@@ -88,9 +88,10 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
   <!-- Inizio -->
   <div class="panel" id="intro">
     <h1 id="title">Respiro lento</h1>
-    <p>Il telefono ti guida con la voce e ti ascolta. Tienilo a 10–20 cm dal viso ed espira verso di lui: il cerchio si accorge del tuo soffio e ti dice se sei a tempo.</p>
+    <p>Il telefono ti guida con la voce. Se vuoi, può anche ascoltarti: tienilo a 10–20 cm dal viso ed espira morbido, senza soffiare; il cerchio sente l'espirazione e ti dice se sei a tempo.</p>
+    <p class="small">Se senti capogiro, testa leggera, fame d'aria o formicolii, torna al respiro normale e fermati.</p>
     <div class="row">
-      <label class="opt"><input type="checkbox" id="optMic" checked> Usa il microfono</label>
+      <label class="opt"><input type="checkbox" id="optMic"> Usa il microfono</label>
       <label class="opt"><input type="checkbox" id="optVoice" checked> Guida a voce</label>
     </div>
     <div class="row">
@@ -124,7 +125,7 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       <div class="stat"><b id="sSync">–</b><span>a tempo con la guida</span></div>
     </div>
     <p id="endNote"></p>
-    <p class="small">Il microfono sente il soffio dell'espirazione: non misura il battito né la variabilità cardiaca. Gli studi sul respiro lento indicano un ritmo di circa 4,5–7 respiri al minuto (MS 4.1).</p>
+    <p class="small">Il microfono sente il rumore dell'espirazione: non misura il battito né la variabilità cardiaca. Gli studi sul respiro lento indicano un ritmo di circa 4,5–7 respiri al minuto (MS 4.1).</p>
     <div class="row"><button class="btn" id="again">Ricomincia</button><a class="btn primary" href="./" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Torna all'app</a></div>
   </div>
 </div>
@@ -174,8 +175,8 @@ async function calibrate(){
   $("calTitle").textContent="Un attimo di silenzio"; $("calText").textContent="Ascolto il rumore della stanza per 3 secondi.";
   const q = await sample(3000,"calLvl");
   floor = q[Math.floor(q.length*0.5)] || 0.002;
-  $("calTitle").textContent="Ora soffia piano verso il telefono"; $("calText").textContent="Un'espirazione lunga e tranquilla, dalla bocca, per 3 secondi.";
-  speak("Ora soffia piano verso il telefono");
+  $("calTitle").textContent="Ora espira piano, senza soffiare"; $("calText").textContent="Un'espirazione lunga e morbida, a bocca socchiusa, per 3 secondi.";
+  speak("Ora espira piano, senza soffiare");
   await sleep(600);
   const b = await sample(3000,"calLvl");
   const blow = b[Math.floor(b.length*0.8)] || floor;
@@ -207,7 +208,7 @@ async function go(){
   if(useMic){
     try{ await startMic(); }
     catch(e){ $("hint").textContent="Microfono non disponibile: ti guido solo con la voce e il cerchio."; }
-    if(an){ const ok = await calibrate(); if(!ok){ stopMic(); $("hint").textContent="Non sento il soffio: continuo senza microfono. Prova ad avvicinare il telefono."; } }
+    if(an){ const ok = await calibrate(); if(!ok){ stopMic(); $("hint").textContent="Non sento l'espirazione: continuo senza microfono. Prova ad avvicinare il telefono."; } }
   }
   try{ wake = await navigator.wakeLock?.request("screen"); }catch(e){}
   S = {dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
@@ -226,7 +227,7 @@ function endPhase(){
   const p=phase();
   if(an){
     if(p.k==="out" && S.ph.out>0){ const f=S.ph.outLoud/S.ph.out; S.feedback = f<0.35 ? "Espira più a lungo, fino a quando il cerchio è piccolo" : (f>0.7 ? "Bene, espirazione lunga" : ""); }
-    if(p.k==="in" && S.ph.in>0){ const f=S.ph.inLoud/S.ph.in; if(f>0.5) S.feedback="Sento ancora soffiare: inspira in silenzio dal naso"; }
+    if(p.k==="in" && S.ph.in>0){ const f=S.ph.inLoud/S.ph.in; if(f>0.5) S.feedback="Sento ancora espirare: inspira in silenzio dal naso"; }
     $("hint").textContent=S.feedback;
   }
   S.idx++;

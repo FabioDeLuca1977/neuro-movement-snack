@@ -11,8 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Neuro Snack">
 <title>Neuro Movement Snack</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caladea:wght@400;700&family=Lato:wght@400;700&family=IBM+Plex+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: lo stile di Movement Snack. Fondo nebbia, petrolio per la calma, verde per i numeri, ocra per l'energia; titoli con grazie, testo pulito. */
 :root{
@@ -338,7 +337,7 @@ select{max-width:100%}
       <h2 class="big" data-eyebrow="I tuoi dati">Diario</h2>
       <div class="note" id="exampleNote" hidden>
         <span class="badge-ex">Dati di esempio</span>
-        Questi numeri sono inventati per mostrare come funziona il diario.
+        Questi numeri sono inventati per mostrare come funziona il diario e non indicano nessun risultato atteso.
         <div class="row" style="margin-top:8px"><button class="btn" id="clearExamples">Cancella gli esempi e inizia</button></div>
       </div>
 
@@ -494,6 +493,8 @@ select{max-width:100%}
       <div>
         <h3 style="margin-bottom:6px">Come si fa</h3>
         <ol class="steps" id="sxSteps"></ol>
+        <p class="small" id="sxChair" style="margin-top:10px" hidden><b>Sedia:</b> usala solo se è stabile e senza rotelle, oppure appoggiata al muro o alla scrivania.</p>
+        <p class="small" style="margin-top:6px"><b>Per tutti gli esercizi:</b> se senti capogiro, testa leggera, fame d'aria, formicolii o dolore, torna al respiro normale e fermati.</p>
       </div>
       <div class="label" id="sxRows"></div>
       <div class="legend-ev">P Protocollo studiato · A Adattato · E Esperienziale<br>●●● Buone · ●● Indizi · ● Ipotesi</div>
@@ -824,19 +825,21 @@ const dirColor = x => DIRVAR[dirKey(x)];
 
 // ---------- Stato salvato (solo su questo dispositivo) ----------
 const KEY = "pitstop.v2";
-const iso = d => d.toISOString().slice(0,10);
+// data locale (non UTC): dopo mezzanotte il diario va sul giorno giusto
+const iso = d => { const z = new Date(d); return z.getFullYear()+"-"+String(z.getMonth()+1).padStart(2,"0")+"-"+String(z.getDate()).padStart(2,"0"); };
 const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
 function exampleData(){
   const today = new Date(); const days = [];
-  // Numeri inventati, deterministici, solo per mostrare il diario
-  const eA=[5,4,5,4,6,5,4,5,4,5,5,4,5,4], tA=[6,7,6,7,5,6,7,6,7,6,6,7,6,6];
-  const eB=[5,6,5,6,6,7,6,6,7,6,7,6,7,7], tB=[6,5,5,6,5,4,5,5,4,5,4,5,4,4];
-  const pA=[4,5,4,4,5,4,5,4,4,5,4,4,5,4], pB=[4,4,4,3,4,3,3,3,3,2,3,3,2,3];
+  // Numeri inventati e volutamente piatti: prima e dopo hanno gli stessi valori
+  // in ordine diverso, così l'esempio non suggerisce nessun effetto atteso
+  const eA=[5,4,5,6,5,4,5,5,6,4,5,5,4,6], tA=[6,5,6,7,5,6,6,5,7,6,5,6,6,5];
+  const eB=[5,6,4,5,5,4,6,5,4,5,6,5,5,4], tB=[5,6,6,5,7,6,5,6,6,7,5,6,5,6];
+  const pA=[4,3,4,4,3,5,4,3,4,4,5,3,4,4], pB=[3,4,4,5,4,3,4,4,3,4,5,4,3,4];
   for(let i=0;i<28;i++){
     const d = iso(addDays(today, i-27));
     days.push({d, e: i<14?eA[i]:eB[i-14], t: i<14?tA[i]:tB[i-14], p: i<14?pA[i]:pB[i-14]});
   }
-  const sessions=[{ex:"respiro",pe:4,pt:7,ae:5,at:5},{ex:"micro3",pe:3,pt:5,ae:5,at:4},{ex:"luce",pe:4,pt:4,ae:6,at:3},{ex:"guidato",pe:5,pt:8,ae:5,at:6},{ex:"cammino",pe:3,pt:5,ae:6,at:4}]
+  const sessions=[{ex:"respiro",pe:4,pt:6,ae:4,at:6},{ex:"micro3",pe:5,pt:5,ae:5,at:4},{ex:"luce",pe:4,pt:5,ae:5,at:5},{ex:"guidato",pe:5,pt:6,ae:5,at:6},{ex:"cammino",pe:4,pt:5,ae:4,at:5}]
     .map((s,i)=>({...s, d: iso(addDays(today,-(i*3)))}));
   return {example:true, days, sessions, exp:{ex:"fly", start: iso(addDays(today,-13))}};
 }
@@ -900,7 +903,7 @@ const AREA2R = {tens:"mind", vig:"energy", meal:"meta", neck:"post", fiato:"stai
 // schede di competenza del Centro del Loto, ancora da compilare
 const COMING = [
   {r:"mind",  code:"MS 4.3", name:"Movimento lento con respiro coordinato"},
-  {r:"stair", code:"MS 5.3", name:"Tai chi in formato breve"},
+  {r:"meta",  code:"MS 5.3", name:"Tai chi in formato breve"},
   {r:"coreg", code:"MS 6.2", name:"Pratica di gruppo con componente relazionale"}
 ];
 
@@ -1083,6 +1086,7 @@ function openSession(id){
   $("sxTitle").textContent=x.name; $("sxCode").textContent=`${routineOf(x)?routineOf(x).n+" · ":""}${x.code} · ${x.dur}${x.team?" · in gruppo":""}`;
   $("sxL2").hidden = x.lvl!==2;
   $("sxSteps").innerHTML=x.steps.map(s=>`<li>${s}</li>`).join("");
+  $("sxChair").hidden=!/sedia/i.test(x.steps.join(" ")+JSON.stringify(x.seq||[]));
   // video dimostrativo: i file vanno nella cartella video/ e si indicano nel campo "video" della scheda
   $("sxVideo").innerHTML = !x.mins ? "" : x.video
     ? `<figure class="vid"><video src="video/${x.video}" controls playsinline muted loop preload="metadata"></video>
