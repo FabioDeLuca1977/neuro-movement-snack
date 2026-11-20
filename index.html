@@ -111,6 +111,8 @@ details.alt summary{cursor:pointer;font-size:.85rem;color:var(--muted);min-heigh
 .lrow:last-child{border-bottom:0}
 .lrow > b{font-weight:700;flex:none;color:var(--petrol)}
 .lrow > span{font-size:.95rem;text-align:right}
+#shPreview .lrow > b{flex:1 1 auto;font-weight:600;font-size:.9rem}
+#shPreview .lrow > span{flex:none}
 .lstack{padding:9px 0;border-bottom:1px solid var(--soft);display:grid;gap:3px}
 .lstack:last-child{border-bottom:0}
 .lstack > b{font-weight:700;color:var(--petrol)}
@@ -373,6 +375,20 @@ select{max-width:100%}
           <div class="tablewrap" id="dayTable"></div>
         </details>
       </div>
+      <div class="box" id="shareBox">
+        <p class="group-h">Contributo anonimo</p>
+        <h3>Aiuta il reparto a capire se le pause servono</h3>
+        <p class="muted small">Se l'ambassador lo chiede, puoi dargli un codice con le medie di un mese. Niente nome, niente date, nessun giorno singolo: solo i numeri qui sotto, arrotondati. Il riepilogo del reparto si vede solo quando le persone che contribuiscono sono almeno 5. È volontario: puoi non darlo, senza spiegazioni.</p>
+        <div class="row"><label for="shMonth">Mese</label><select id="shMonth"></select></div>
+        <div id="shPreview" class="small"></div>
+        <label class="check small"><input type="checkbox" id="shOk"> Ho visto cosa contiene e lo condivido volontariamente</label>
+        <button class="btn primary" id="shMake" disabled>Crea il codice</button>
+        <div id="shResult" hidden style="display:grid;gap:8px">
+          <textarea id="shCode" readonly rows="3" class="tinput" style="width:100%;font-family:var(--mono);font-size:.8rem;padding:8px"></textarea>
+          <button class="btn" id="shCopy">Copia o condividi il codice</button>
+          <p class="muted small">Il codice non contiene il tuo nome, ma se lo mandi in chat o per email chi lo riceve sa che è tuo. Se preferisci restare anonimo anche nella consegna, usa un canale senza nome concordato nel reparto (per esempio un modulo anonimo). Se lo rifai nello stesso mese, il nuovo codice sostituisce il precedente.</p>
+        </div>
+      </div>
       <div class="box" id="ambBox">
         <p class="group-h">Per l'ambassador</p>
         <h3>Sessioni di gruppo e indicatori</h3>
@@ -394,6 +410,13 @@ select{max-width:100%}
         <div class="row"><label for="ambWeeks">Richiamo tra</label><select id="ambWeeks"><option value="4">4 settimane</option><option value="6" selected>6 settimane</option><option value="8">8 settimane</option></select><button class="btn" id="ambSetRich">Fissa il richiamo</button></div>
         <button class="btn" id="ambCopy">Copia il riepilogo di reparto</button>
         <pre id="ambOut" hidden style="white-space:pre-wrap;font-family:var(--mono);font-size:.8rem"></pre>
+        <details class="neuro" id="aggBox"><summary><b>Riepilogo anonimo per HR e medico competente</b><span>Contributi</span></summary>
+          <p class="muted small">Le persone che lo desiderano ti mandano un codice dal loro Diario. Incollali qui, anche tutti insieme. Il riepilogo usa solo medie di gruppo e compare solo con almeno 5 contributi dello stesso mese; ogni dato con meno di 5 persone resta nascosto. Tratta i codici come confidenziali: non associarli alle persone, non inoltrarli e cancellali dopo il calcolo.</p>
+          <textarea id="aggIn" rows="5" class="tinput" style="width:100%;font-family:var(--mono);font-size:.8rem;padding:8px" placeholder="NMS1.…"></textarea>
+          <button class="btn primary" id="aggGo">Calcola il riepilogo</button>
+          <pre id="aggOut" hidden style="white-space:pre-wrap;font-family:var(--mono);font-size:.8rem;margin:0"></pre>
+          <div class="row" id="aggActs" hidden><button class="btn" id="aggCopy">Copia</button><button class="btn" id="aggDl">Scarica (.txt)</button></div>
+        </details>
         <details class="neuro"><summary><b>Come si conduce</b><span>Per chi conduce</span></summary>
           <div class="lstack"><b>Si invita, non si ordina</b><span>«Ci fermiamo due minuti, chi vuole si unisce», mai «tutti in piedi».</span></div>
           <div class="lstack"><b>Si fa insieme</b><span>Chi conduce esegue con il gruppo, non guarda da bordo campo. Nessuno esegue da solo davanti agli altri.</span></div>
@@ -461,7 +484,7 @@ select{max-width:100%}
       </div>
       <div class="box">
         <h3>Privacy e limiti</h3>
-        <p>I dati restano solo su questo dispositivo, nel browser, e nessuno li vede: l'app non li invia a nessun server. Nel diario puoi annotare il dolore a collo e spalle: è un dato sulla salute, per questo resta solo qui e puoi cancellarlo quando vuoi. Neuro Movement Snack non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
+        <p>I dati restano solo su questo dispositivo, nel browser, e nessuno li vede: l'app non li invia a nessun server. Nel diario puoi annotare il dolore a collo e spalle: è un dato sulla salute, per questo resta solo qui e puoi cancellarlo quando vuoi. Se vuoi, dal Diario puoi dare all'ambassador un codice anonimo con le medie del mese: vedi prima cosa contiene, e il riepilogo di reparto compare solo con almeno 5 persone. Neuro Movement Snack non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
         <button class="btn" id="wipeAll">Cancella tutti i miei dati</button>
       </div>
     </section>
@@ -853,7 +876,7 @@ function load(){
       // controllo la forma dei dati: se qualcosa è rovinato riparto pulito invece di bloccarmi
       if(o && typeof o==="object" && Array.isArray(o.days) && Array.isArray(o.sessions)){
         S = {example:!!o.example, days:o.days.filter(d=>d && /^\d{4}-\d{2}-\d{2}$/.test(d.d)), sessions:o.sessions.filter(x=>x && typeof x.ex==="string"),
-             exp:(o.exp && typeof o.exp.ex==="string") ? o.exp : null, amb:o.amb, l2ok:o.l2ok};
+             exp:(o.exp && typeof o.exp.ex==="string") ? o.exp : null, amb:o.amb, l2ok:o.l2ok, shareIds:o.shareIds};
         return; } } }catch(e){}
   S = exampleData(); }
 let saveFailedAt = 0;
@@ -1399,8 +1422,115 @@ $("ambCopy").addEventListener("click",async()=>{
   const txt=`Neuro Movement Snack · riepilogo di reparto\nPartecipazione · sessioni condotte: ${n}, partecipanti in media: ${n?fmt(people/n):"–"}${pct(1)||pct(2)?"\nPercezione":""}${pct(1)}${pct(2)}\nDati aggregati, nessun dato individuale.`;
   try{ await navigator.clipboard.writeText(txt); toast("Riepilogo copiato"); }catch(e){ $("ambOut").textContent=txt; $("ambOut").hidden=false; }
 });
+// ---------- Contributo anonimo e riepilogo per HR e medico competente ----------
+// Ogni persona tiene il diario sul proprio telefono: per un quadro di reparto serve che lo voglia
+// condividere. Il codice contiene solo medie mensili arrotondate; il riepilogo sta sotto soglia finché
+// i contributi sono meno di AGG_MIN, e ogni singolo dato con meno di AGG_MIN persone resta nascosto.
+const AGG_MIN = 5;
+const half = v => Math.round(v*2)/2;
+const sgn = v => (v>0?"+":v<0?"−":"") + fmt(Math.abs(v));
+const monthLabel = m => new Date(+m.slice(0,4), +m.slice(5,7)-1, 15).toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+function shareMonths(){ const d=new Date(); return [iso(d).slice(0,7), iso(new Date(d.getFullYear(), d.getMonth()-1, 15)).slice(0,7)]; }
+function contribution(m){
+  const days=S.days.filter(x=>x.d.slice(0,7)===m), ss=S.sessions.filter(x=>x.d && x.d.slice(0,7)===m);
+  const r={}; ss.forEach(x=>{ const k=ROUT[x.ex]; if(k) r[k]=(r[k]||0)+1; });
+  const mean = (a,f) => a.length ? half(avg(a.map(f))) : null;
+  return {v:1, m, g:days.length, e:mean(days,x=>x.e), t:mean(days,x=>x.t), p:mean(days,x=>x.p),
+          n:ss.length, de:mean(ss,x=>x.ae-x.pe), dt:mean(ss,x=>x.at-x.pt), r};
+}
+const encodeC = c => "NMS1." + btoa(JSON.stringify(c)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+function decodeC(code){
+  try{ let b=code.slice(5).replace(/-/g,"+").replace(/_/g,"/"); while(b.length%4) b+="=";
+    const o=JSON.parse(atob(b)); const num=(v,a,z)=>v===null || (typeof v==="number" && v>=a && v<=z);
+    const int=(v,a,z)=>Number.isInteger(v) && v>=a && v<=z;
+    if(o.v!==1 || !/^\d{4}-\d{2}$/.test(o.m) || typeof o.id!=="string" || !/^[a-z0-9]{4,12}$/.test(o.id)) return null;
+    if(!int(o.g,0,31) || !int(o.n,0,1000) || !num(o.e,0,10) || !num(o.t,0,10) || !num(o.p,0,10) || !num(o.de,-10,10) || !num(o.dt,-10,10)) return null;
+    if(!o.r || typeof o.r!=="object" || Object.entries(o.r).some(([k,v])=>!ROUTINES.some(r=>r.k===k) || !int(v,0,1000))) return null;
+    return o; }catch(e){ return null; }
+}
+function renderShare(){
+  const sel=$("shMonth"), keep=sel.value;
+  sel.innerHTML=shareMonths().map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join(""); if(keep) sel.value=keep;
+  const c=contribution(sel.value), empty=!c.g && !c.n;
+  const row=(l,v)=>`<div class="lrow"><b>${l}</b><span>${v}</span></div>`;
+  $("shPreview").innerHTML = S.example ? `<p class="muted">Ora il diario contiene i dati di esempio: il codice si crea con i tuoi dati veri.</p>` :
+    empty ? `<p class="muted">Nessun dato in ${monthLabel(c.m)}.</p>` :
+    `<p class="muted" style="margin:0 0 4px">Il codice contiene esattamente questo:</p>` +
+    row("Giorni annotati nel diario", c.g) + row("Energia media a fine giornata", c.e===null?"–":fmt(c.e)) +
+    row("Tensione media a fine giornata", c.t===null?"–":fmt(c.t)) + row("Dolore medio a collo e spalle", c.p===null?"–":fmt(c.p)) +
+    row("Pause registrate", c.n) + row("Energia, dopo la pausa rispetto a prima", c.de===null?"–":sgn(c.de)) +
+    row("Tensione, dopo la pausa rispetto a prima", c.dt===null?"–":sgn(c.dt)) +
+    row("Pause per routine", Object.keys(c.r).length ? ROUTINES.filter(r=>c.r[r.k]).map(r=>`${r.n} ${c.r[r.k]}`).join(" · ") : "–");
+  $("shMake").disabled = S.example || empty || !$("shOk").checked;
+}
+$("shMonth").addEventListener("change",()=>{ $("shResult").hidden=true; renderShare(); });
+$("shOk").addEventListener("change",renderShare);
+$("shMake").addEventListener("click",()=>{
+  const c=contribution($("shMonth").value);
+  // identificativo casuale, uno per mese: serve solo a non contare due volte la stessa persona
+  S.shareIds=S.shareIds||{}; if(!S.shareIds[c.m]){ S.shareIds[c.m]=Math.random().toString(36).slice(2,10).padEnd(6,"0"); save(); }
+  $("shCode").value=encodeC({...c, id:S.shareIds[c.m]}); $("shResult").hidden=false; $("shCode").select();
+});
+$("shCopy").addEventListener("click",async()=>{
+  const code=$("shCode").value;
+  if(navigator.share){ try{ await navigator.share({text:code}); return; }catch(e){ if(e.name==="AbortError") return; } }
+  try{ await navigator.clipboard.writeText(code); toast("Codice copiato"); }catch(e){ $("shCode").select(); toast("Seleziona e copia il codice"); }
+});
+
+function aggReport(text){
+  const all=(text.match(/NMS1\.[A-Za-z0-9_-]+/g)||[]).map(decodeC);
+  const bad=all.filter(x=>!x).length, ok=all.filter(Boolean);
+  if(!ok.length) return {txt:`Nessun codice valido trovato${bad?` (${bad} non leggibili)`:""}.`, ready:false};
+  const byM={}; ok.forEach(o=>{ (byM[o.m]=byM[o.m]||new Map()).set(o.id,o); });   // stesso id: vale l'ultimo
+  const m=Object.keys(byM).sort((a,b)=>byM[b].size-byM[a].size || (a<b?1:-1))[0], L=[...byM[m].values()];
+  const other=Object.keys(byM).filter(k=>k!==m).map(k=>`${monthLabel(k)} (${byM[k].size})`);
+  const note=[bad?`${bad} codici non leggibili ignorati.`:"", other.length?`Codici di altri mesi esclusi: ${other.join(", ")}.`:""].filter(Boolean).join(" ");
+  if(L.length<AGG_MIN) return {txt:`${monthLabel(m)}: ${L.length} contributi su ${AGG_MIN} necessari.\nIl riepilogo non si mostra finché non ci sono almeno ${AGG_MIN} persone: così nessuno è riconoscibile.${note?"\n"+note:""}`, ready:false};
+  const grp=(f,label,fx)=>{ const v=L.filter(f); return v.length>=AGG_MIN ? `${label}: ${fx(v)} (${v.length} persone)` : `${label}: non mostrato, meno di ${AGG_MIN} persone`; };
+  const totN=L.reduce((s,o)=>s+o.n,0), rt={}; L.forEach(o=>Object.entries(o.r).forEach(([k,v])=>rt[k]=(rt[k]||0)+v));
+  const rTot=Object.values(rt).reduce((s,v)=>s+v,0);
+  const rUse=ROUTINES.filter(r=>rt[r.k]).sort((a,b)=>rt[b.k]-rt[a.k]).map(r=>`${r.n} ${Math.round(rt[r.k]/rTot*100)}%`).join(" · ");
+  const usedBy=k=>L.filter(o=>o.r[k]).length;
+  const a=amb().sessions.filter(x=>x.d.slice(0,7)===m), people=a.reduce((s,x)=>s+x.n,0);
+  const lines=[
+    "Neuro Movement Snack · riepilogo anonimo di reparto",
+    `Mese: ${monthLabel(m)} · contributi volontari: ${L.length} (soglia minima ${AGG_MIN})`,
+    "",
+    "PARTECIPAZIONE",
+    `Pause individuali registrate: ${totN}, in media ${fmt(totN/L.length)} a persona`,
+    grp(o=>o.g>0,"Giorni con il diario compilato",v=>`in media ${fmt(avg(v.map(o=>o.g)))} a persona`),
+    rTot && ROUTINES.every(r=>!rt[r.k] || usedBy(r.k)>=AGG_MIN) ? `Pause per routine: ${rUse}` : "Pause per routine: non mostrato, alcune routine usate da meno di " + AGG_MIN + " persone",
+    a.length ? `Sessioni di gruppo condotte dall'ambassador: ${a.length}, in media ${fmt(people/a.length)} partecipanti` : "Sessioni di gruppo condotte dall'ambassador: nessuna registrata in questo mese",
+    "",
+    "PERCEZIONE (autovalutazione da 0 a 10)",
+    grp(o=>o.e!==null,"Energia media a fine giornata",v=>fmt(avg(v.map(o=>o.e)))),
+    grp(o=>o.t!==null,"Tensione media a fine giornata",v=>fmt(avg(v.map(o=>o.t)))),
+    grp(o=>o.p!==null,"Dolore medio a collo e spalle",v=>fmt(avg(v.map(o=>o.p)))),
+    grp(o=>o.de!==null,"Energia subito dopo la pausa, rispetto a prima",v=>sgn(avg(v.map(o=>o.de)))),
+    grp(o=>o.dt!==null,"Tensione subito dopo la pausa, rispetto a prima",v=>sgn(avg(v.map(o=>o.dt)))),
+    "",
+    "COME LEGGERLO",
+    "Sono valutazioni date dalle persone stesse, senza gruppo di confronto: descrivono la percezione, non dimostrano un effetto delle pause e non sono una valutazione sanitaria.",
+    "Nessun dato individuale: solo medie di gruppo, da contributi volontari, e solo con almeno " + AGG_MIN + " persone per ogni dato.",
+    "Per il medico competente: è un segnale di percezione del reparto, non sostituisce la sorveglianza sanitaria.",
+  ];
+  if(note) lines.push("", note);
+  return {txt:lines.join("\n"), ready:true, m};
+}
+let aggLast=null;
+$("aggGo").addEventListener("click",()=>{
+  const r=aggReport($("aggIn").value); aggLast=r.ready?r:null;
+  $("aggOut").textContent=r.txt; $("aggOut").hidden=false; $("aggActs").hidden=!r.ready;
+});
+$("aggCopy").addEventListener("click",async()=>{ if(!aggLast) return;
+  try{ await navigator.clipboard.writeText(aggLast.txt); toast("Riepilogo copiato"); }catch(e){ toast("Seleziona e copia il testo"); } });
+$("aggDl").addEventListener("click",()=>{ if(!aggLast) return;
+  const url=URL.createObjectURL(new Blob([aggLast.txt.replace(/\n/g,"\r\n")],{type:"text/plain;charset=utf-8"}));
+  const a=document.createElement("a"); a.href=url; a.download=`riepilogo-reparto-${aggLast.m}.txt`; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),2000); });
+
 const _renderDiary = renderDiary;
-renderDiary = function(){ _renderDiary(); renderAmb(); };
+renderDiary = function(){ _renderDiary(); renderAmb(); renderShare(); };
 
 // ---------- Versione installabile: notifiche e funzionamento offline ----------
 $("notif").addEventListener("change",async()=>{
