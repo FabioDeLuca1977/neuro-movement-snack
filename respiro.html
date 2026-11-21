@@ -141,7 +141,7 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
     <div class="wave" id="liveMeter"><span class="bars" id="bars" aria-hidden="true"></span><span id="hear">IN ASCOLTO</span><span id="rate" class="rate">– resp/min</span></div>
     <div class="hrlive" id="hrLive" hidden>
       <div class="hrhead"><b id="hrBpm">–<small>battiti/min</small></b><span>onda del respiro nel battito: <em id="hrWave">–</em></span></div>
-      <div class="syncrow"><span class="sypill" id="syPill" data-l="">sintonia –</span><span id="syTxt">Serve circa un minuto di battiti.</span></div>
+      <div class="syncrow"><span class="sypill" id="syPill" data-l="">sintonia –</span><span id="syTxt">Serve circa mezzo minuto di battiti.</span></div>
       <canvas id="hrCv" role="img" aria-label="Andamento del battito nell'ultimo minuto"></canvas>
       <div class="hrleg"><span><i style="background:rgba(95,214,160,.5)"></i>inspira</span><span><i style="background:rgba(226,170,70,.5)"></i>espira</span><span>ultimo minuto</span></div>
       <p class="small" id="hrMsg" aria-live="polite"></p>
@@ -542,54 +542,61 @@ function drawHr(now){
 }
 
 // ---------- Sintonia respiro-battito ----------
-// Ispirata al rapporto di coerenza pubblicato da HeartMath: quanta parte dell'oscillazione del battito
-// sta in un picco stretto vicino al ritmo della guida, rispetto a tutto il resto.
+// Ispirata al rapporto di coerenza pubblicato da HeartMath (oscillazione sul ritmo del respiro ÷ resto),
+// ma su 32 secondi e cercando l'onda al ritmo della guida, così risponde prima.
 // Non misura il rilassamento: dice se il battito segue il respiro in modo regolare. Soglie provvisorie.
 const CYCLE_S = P.phases.reduce((a,p)=>a+p.s,0), F0 = 1/CYCLE_S;
 const SY_LEVELS = ["bassa","media","alta"], SY_MIN = {media:1, alta:3};
 const SY_TIPS = ["Allunga l'espirazione, senza forzare.", "Lascia scendere le spalle.", "Respira piano, come se il respiro arrivasse da solo."];
 const SYNC = {};
-function syReset(){ Object.assign(SYNC, {level:null, ratio:null, at:0, hist:[], lastCue:0, lowSince:0, tip:0, time:{bassa:0,media:0,alta:0}, first:null, lastTick:0}); }
+function syReset(){ Object.assign(SYNC, {level:null, ratio:null, at:0, hist:[], lastCue:0, lowSince:0, tip:0, time:{bassa:0,media:0,alta:0}, first:null, lastTick:0, down:0}); }
 syReset();
+const SY_WIN = 32000, SY_EVERY = 3000;
 function syncCompute(now, beats){
-  const b0 = beats.filter(x=>x.t>=now-64000);
+  const b0 = beats.filter(x=>x.t>=now-SY_WIN);
   // tolgo i battiti isolati fuori scala (errori di lettura): oltre il 20% dalla mediana dei vicini
   const b = b0.filter((x,i)=>{ const nb=b0.slice(Math.max(0,i-3),i).concat(b0.slice(i+1,i+4)).map(y=>y.ibi);
     return nb.length<3 || Math.abs(x.ibi-median(nb))<=median(nb)*0.2; });
   const span = b.length>1 ? b[b.length-1].t-b[0].t : 0;
-  if(b.length<30 || span<40000) return null;                          // troppo pochi dati
+  if(b.length<18 || span<24000) return null;                          // troppo pochi dati
   for(let i=1;i<b.length;i++) if(b[i].t-b[i-1].t>3000) return {bad:true}; // segnale interrotto
-  // battito ricampionato a 4 Hz
+  // battito ricampionato a 4 Hz, senza media e tendenza lineare
   const fs=4, t0=b[0].t, n=Math.floor(span/1000*fs), x=new Float64Array(n);
   let j=0;
   for(let i=0;i<n;i++){ const t=t0+i*1000/fs; while(j<b.length-2 && b[j+1].t<t) j++;
     const a=b[j], c=b[j+1], u=Math.max(0,Math.min(1,(t-a.t)/(c.t-a.t))); x[i]=a.hr+(c.hr-a.hr)*u; }
-  // tolgo media e tendenza lineare, poi finestra di Hann
   let sx=0, sy=0, sxx=0, sxy=0; for(let i=0;i<n;i++){ sx+=i; sy+=x[i]; sxx+=i*i; sxy+=i*x[i]; }
   const k=(n*sxy-sx*sy)/(n*sxx-sx*sx), q=(sy-k*sx)/n;
-  for(let i=0;i<n;i++) x[i]=(x[i]-(k*i+q))*(0.5-0.5*Math.cos(2*Math.PI*i/(n-1)));
-  // spettro su una griglia fitta, da 0,004 a 0,4 Hz
-  const spec=[];
-  for(let f=0.004; f<=0.4001; f+=0.004){ let re=0, im=0; const w=2*Math.PI*f/fs;
-    for(let i=0;i<n;i++){ re+=x[i]*Math.cos(w*i); im-=x[i]*Math.sin(w*i); } spec.push({f, p:re*re+im*im}); }
-  const tot = spec.reduce((a,s)=>a+s.p,0);
-  const cand = spec.filter(s=>s.f>=Math.max(0.04,F0-0.03) && s.f<=Math.min(0.26,F0+0.03));
-  const pk = cand.reduce((a,s)=>s.p>a.p?s:a, cand[0]);
-  const pw = spec.filter(s=>Math.abs(s.f-pk.f)<=0.015+1e-9).reduce((a,s)=>a+s.p,0);
-  return {ratio: pw/Math.max(1e-9,tot-pw), f:pk.f};
+  let tot=0; for(let i=0;i<n;i++){ x[i]-=k*i+q; tot+=x[i]*x[i]; }
+  if(tot<=1e-9) return {ratio:0, f:F0};
+  // conosco il ritmo della guida: cerco l'onda a quel ritmo (±0,02 Hz) che spiega più oscillazione del battito
+  let best={r2:0, f:F0};
+  for(let f=Math.max(0.04,F0-0.02); f<=F0+0.02001; f+=0.002){
+    const w=2*Math.PI*f/fs; let ss=0, cc=0, sc=0, xs=0, xc=0;
+    for(let i=0;i<n;i++){ const si=Math.sin(w*i), ci=Math.cos(w*i); ss+=si*si; cc+=ci*ci; sc+=si*ci; xs+=x[i]*si; xc+=x[i]*ci; }
+    const det=ss*cc-sc*sc; if(det<=0) continue;
+    const A=(xs*cc-xc*sc)/det, B=(xc*ss-xs*sc)/det, r2=(A*xs+B*xc)/tot;
+    if(r2>best.r2) best={r2, f};
+  }
+  // come nel rapporto di coerenza: oscillazione sul ritmo del respiro ÷ tutto il resto
+  const r2=Math.min(0.999,best.r2);
+  return {ratio: r2/(1-r2), f:best.f};
 }
 function syLevel(r){ return r>=SY_MIN.alta ? "alta" : r>=SY_MIN.media ? "media" : "bassa"; }
 function syncTick(now){
   const dt = SYNC.lastTick ? Math.min(0.5,(now-SYNC.lastTick)/1000) : 0; SYNC.lastTick=now;
   if(SYNC.level && SYNC.level!=="?" && !S.pauseAt) SYNC.time[SYNC.level]+=dt;
-  if(now-SYNC.at<5000) return; SYNC.at=now;
+  if(now-SYNC.at<SY_EVERY) return; SYNC.at=now;
   const r = syncCompute(now, HR.beats), pill=$("syPill");
-  if(!r){ SYNC.level=null; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Serve circa un minuto di battiti."; return; }
+  if(!r){ SYNC.level=null; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Serve circa mezzo minuto di battiti."; return; }
   if(r.bad){ SYNC.level="?"; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Il segnale si è interrotto: aspetto che torni stabile."; return; }
-  const prev=SYNC.level, lv=syLevel(r.ratio);
+  const prev=SYNC.level, raw=syLevel(r.ratio), ri=SY_LEVELS.indexOf(raw), pi=SY_LEVELS.indexOf(prev);
+  // sale subito, scende solo se il calo si conferma due volte di fila: meno nervosa
+  let lv=raw; if(pi>=0 && ri<pi){ SYNC.down=(SYNC.down||0)+1; if(SYNC.down<2) lv=prev; } 
+  if(lv===raw) SYNC.down=0;
   SYNC.hist.push(r.ratio); if(SYNC.hist.length>40) SYNC.hist.shift();
   SYNC.level=lv; SYNC.ratio=r.ratio; if(!SYNC.first) SYNC.first=lv;
-  const old = SYNC.hist.length>3 ? SYNC.hist[SYNC.hist.length-4] : null;           // 15 secondi fa
+  const old = SYNC.hist.length>3 ? SYNC.hist[SYNC.hist.length-4] : null;           // 9 secondi fa
   const trend = old===null ? 0 : (r.ratio>old*1.25 ? 1 : (r.ratio<old*0.8 ? -1 : 0));
   pill.dataset.l=lv; pill.textContent="sintonia "+lv+(trend>0?" ↑":"");
   // il feedback premia e basta: niente rimproveri, solo un suggerimento gentile se resta bassa
