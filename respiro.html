@@ -19,7 +19,7 @@
 html,body{height:100%;margin:0}
 body{background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden}
 [hidden]{display:none!important}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
 .ui{position:fixed;inset:0;display:flex;flex-direction:column;
   padding:calc(env(safe-area-inset-top,0px) + 14px) max(18px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 18px) max(18px,env(safe-area-inset-left,0px));pointer-events:none}
 .ui > *{pointer-events:auto}
@@ -66,6 +66,19 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
 .wave .rate{font-family:var(--mono);font-size:.72rem;color:var(--dim)}
 .small{font-size:.86rem}
 .livebar{display:grid;gap:10px;max-width:520px;width:100%;margin:0 auto}
+/* battito (prova) */
+.hrpick{display:grid;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.hrpick .row label{color:var(--ink)}
+.hrlive{display:grid;gap:6px;border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.hrhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hrhead b{font-family:var(--display);font-weight:700;font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.hrhead b small{font-family:var(--body);font-size:.8rem;font-weight:400;color:var(--dim);margin-left:4px}
+.hrhead span{font-size:.85rem;color:var(--dim)}
+.hrhead span em{font-style:normal;color:#7fd4b3;font-weight:700}
+#hrCv{width:100%;height:84px;display:block}
+.hrleg{display:flex;gap:14px;font-size:.75rem;color:var(--dim)}
+.hrleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#hrMsg:empty{display:none}
 @media (prefers-reduced-motion: reduce){ .panel{backdrop-filter:none} }
 </style>
 </head>
@@ -98,6 +111,14 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       <label for="dur" class="small">Durata</label>
       <select id="dur"><option value="1">1 min</option><option value="3" selected>3 min</option><option value="5">5 min</option></select>
     </div>
+    <div class="hrpick">
+      <div class="row">
+        <label for="hrSrc" class="small">Battito (prova)</label>
+        <select id="hrSrc"><option value="none">Non misurare</option><option value="ble">Fascia cardio Bluetooth</option><option value="cam">Dito sulla fotocamera</option></select>
+      </div>
+      <button class="btn" id="hrConnect" hidden>Collega la fascia</button>
+      <p class="small" id="hrNote"></p>
+    </div>
     <button class="btn primary" id="go">Inizia</button>
     <p class="small">Il suono non viene registrato né inviato: il telefono misura solo quanto è forte, istante per istante, e lo dimentica.</p>
   </div>
@@ -113,6 +134,12 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
   <div class="livebar" id="live" hidden>
     <div class="sync" id="syncBox" hidden><span>a tempo con la guida</span><b id="syncPct" class="num">–</b></div>
     <div class="wave" id="liveMeter"><span class="bars" id="bars" aria-hidden="true"></span><span id="hear">IN ASCOLTO</span><span id="rate" class="rate">– resp/min</span></div>
+    <div class="hrlive" id="hrLive" hidden>
+      <div class="hrhead"><b id="hrBpm">–<small>battiti/min</small></b><span>onda del respiro nel battito: <em id="hrWave">–</em></span></div>
+      <canvas id="hrCv" role="img" aria-label="Andamento del battito nell'ultimo minuto"></canvas>
+      <div class="hrleg"><span><i style="background:rgba(95,214,160,.5)"></i>inspira</span><span><i style="background:rgba(226,170,70,.5)"></i>espira</span><span>ultimo minuto</span></div>
+      <p class="small" id="hrMsg" aria-live="polite"></p>
+    </div>
     <div class="row"><button class="btn" id="pause">Pausa</button><button class="btn" id="stop">Concludi</button></div>
   </div>
 
@@ -123,9 +150,12 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       <div class="stat"><b id="sBreaths">–</b><span>respiri</span></div>
       <div class="stat"><b id="sRate">–</b><span>respiri al minuto</span></div>
       <div class="stat"><b id="sSync">–</b><span>a tempo con la guida</span></div>
+      <div class="stat" id="stHr" hidden><b id="sHr">–</b><span>battiti al minuto, in media</span></div>
+      <div class="stat" id="stWave" hidden><b id="sWave">–</b><span>onda del respiro nel battito (battiti/min)</span></div>
     </div>
     <p id="endNote"></p>
-    <p class="small">Il microfono sente il rumore dell'espirazione: non misura il battito né la variabilità cardiaca. Gli studi sul respiro lento indicano un ritmo di circa 4,5–7 respiri al minuto (MS 4.1).</p>
+    <p class="small" id="hrEndNote" hidden>L'onda del respiro nel battito è la differenza tra il battito più alto (di solito inspirando) e il più basso (espirando) in ogni respiro. Con il respiro lento tende ad allargarsi. È un riscontro per te, non una misura medica, e non viene salvato.</p>
+    <p class="small">Il microfono sente il rumore dell'espirazione: non misura il battito. Gli studi sul respiro lento indicano un ritmo di circa 4,5–7 respiri al minuto (MS 4.1).</p>
     <div class="row"><button class="btn" id="again">Ricomincia</button><a class="btn primary" href="./" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Torna all'app</a></div>
   </div>
 </div>
@@ -210,8 +240,9 @@ async function go(){
     catch(e){ $("hint").textContent="Microfono non disponibile: ti guido solo con la voce e il cerchio."; }
     if(an){ const ok = await calibrate(); if(!ok){ stopMic(); $("hint").textContent="Non sento l'espirazione: continuo senza microfono. Prova ad avvicinare il telefono."; } }
   }
+  await hrStart();
   try{ wake = await navigator.wakeLock?.request("screen"); }catch(e){}
-  S = {dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
+  S = {cyc:[], phLog:[], dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
        match:0, total:0, exhales:[], onAt:0, ph:{in:0,inLoud:0,out:0,outLoud:0}, feedback:""};
   $("liveMeter").hidden = !an; $("syncBox").hidden = !an; $("syncPct").textContent="–";
   show("live"); startPhase();
@@ -220,6 +251,8 @@ async function go(){
 function phase(){ return P.phases[S.idx % P.phases.length]; }
 function startPhase(){
   const p=phase(); S.phaseT0=performance.now(); S.ph={in:0,inLoud:0,out:0,outLoud:0};
+  S.phLog.push({t:S.phaseT0, k:p.k}); if(S.phLog.length>200) S.phLog.shift();
+  if(S.idx % P.phases.length===0) S.cyc.push(S.phaseT0);
   $("phase").textContent=p.l; speak(p.l);
 }
 function endPhase(){
@@ -268,6 +301,7 @@ function tick(now){
       const recent=S.exhales.filter(t=>now-t<60000), span=Math.min(60,(now-S.t0-S.paused)/1000);
       if(span>20 && recent.length>1) $("rate").textContent=(recent.length/span*60).toFixed(1).replace(".",",")+" resp/min";
     }
+    if(HR.on) hrTick(now);
     if(el>=p.s) endPhase();
   }
 }
@@ -288,10 +322,167 @@ function finish(){
     $("sBreaths").textContent=guided; $("sRate").textContent=(60/cycle).toFixed(1).replace(".",","); $("sSync").textContent="–";
     $("endNote").textContent="Senza microfono conto i respiri guidati, non quelli che hai fatto davvero.";
   }
+  if(S.idx % P.phases.length===0) S.cyc.push(performance.now()); hrFinish();
   speak("Fatto. Ottimo lavoro.");
   stopMic(); try{ wake?.release(); }catch(e){}
   S=null; $("phase").textContent=""; $("count").textContent=""; $("hint").textContent="";
   show("end");
+}
+
+// ---------- Battito (prova): fascia Bluetooth o dito sulla fotocamera ----------
+// I dati del battito restano in memoria solo durante l'esercizio: non vengono salvati né inviati.
+const HR = {on:false, src:"none", beats:[], dev:null, cam:null, vid:null, torch:false, f:null, status:"", live:0, liveAt:0, rej:0};
+const median = a => { const s=[...a].sort((x,y)=>x-y); return s[Math.floor(s.length/2)]; };
+function hrMsg(t){ $("hrMsg").textContent=t||""; }
+function addBeat(t, ibi, strict){
+  if(ibi<330 || ibi>1500) return;                     // fuori da 40–180 battiti al minuto
+  const b=HR.beats;
+  if(strict && b.length>=5){                           // fotocamera: scarto i salti isolati
+    const m=median(b.slice(-5).map(x=>x.ibi));
+    if(Math.abs(ibi-m)>m*0.3){                         // accetto un ritmo nuovo solo se si ripete uguale
+      HR.rej = (HR.rejIbi && Math.abs(ibi-HR.rejIbi)<ibi*0.15) ? HR.rej+1 : 1; HR.rejIbi=ibi;
+      if(HR.rej<3) return; }
+  }
+  HR.rej=0; HR.rejIbi=0; b.push({t, ibi, hr:60000/ibi}); if(b.length>900) b.shift();
+}
+function hrNote(){
+  const v=$("hrSrc").value, ble=!!navigator.bluetooth;
+  $("hrConnect").hidden = v!=="ble" || !ble;
+  $("hrConnect").textContent = HR.dev ? "Collegata: "+(HR.dev.name||"fascia")+" · cambia" : "Collega la fascia";
+  $("hrNote").textContent =
+    v==="ble" ? (ble ? "Inumidisci gli elettrodi, indossa la fascia sul petto e premi Collega. Il battito resta su questo dispositivo e non viene salvato."
+                     : "Questo browser non si collega alle fasce. Su iPhone e iPad Safari non lo permette: apri l'app con il browser gratuito Bluefy. Su Android usa Chrome, su computer Chrome o Edge.")
+    : v==="cam" ? "Durante l'esercizio appoggia la punta dell'indice sulla fotocamera posteriore, coprendo anche il flash, senza premere, e resta fermo. Il telefono legge solo il colore del dito: le immagini non vengono salvate. È meno precisa della fascia."
+    : "";
+}
+$("hrSrc").addEventListener("change", hrNote);
+$("hrConnect").addEventListener("click", connectStrap);
+hrNote();
+
+async function connectStrap(){
+  try{
+    const dev = await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
+    const srv = await (await dev.gatt.connect()).getPrimaryService("heart_rate");
+    const ch = await srv.getCharacteristic("heart_rate_measurement");
+    ch.addEventListener("characteristicvaluechanged", e=>onHrm(e.target.value));
+    await ch.startNotifications();
+    dev.addEventListener("gattserverdisconnected", ()=>{ HR.dev=null; hrMsg("La fascia si è scollegata."); hrNote(); });
+    if(HR.dev && HR.dev!==dev) try{ HR.dev.gatt.disconnect(); }catch(e){}
+    HR.dev=dev; $("hrNote").textContent="Fascia collegata. Il battito resta su questo dispositivo e non viene salvato.";
+  }catch(e){
+    $("hrNote").textContent = e.name==="NotFoundError" ? "Nessuna fascia scelta. Controlla che sia indossata (si accende a contatto con la pelle) e riprova." : "Non riesco a collegarmi alla fascia ("+e.message+").";
+  }
+  $("hrConnect").hidden=false; $("hrConnect").textContent = HR.dev ? "Collegata: "+(HR.dev.name||"fascia")+" · cambia" : "Collega la fascia";
+}
+// Formato standard Bluetooth "Heart Rate Measurement": battito e, se c'è, intervalli tra battiti in 1/1024 s
+function onHrm(dv){
+  const now=performance.now(), f=dv.getUint8(0); let o=1;
+  const hr = (f&1) ? dv.getUint16(o,true) : dv.getUint8(o); o += (f&1) ? 2 : 1;
+  if(f&8) o+=2;
+  const rr=[]; if(f&16) for(; o+1<dv.byteLength; o+=2) rr.push(dv.getUint16(o,true)*1000/1024);
+  HR.live=hr; HR.liveAt=now;
+  if(!HR.on) return;
+  if(rr.length){ let t=now; for(let i=rr.length-1;i>=0;i--){ addBeat(t, rr[i], false); t-=rr[i]; } HR.beats.sort((a,b)=>a.t-b.t); }
+  else if(hr>0) addBeat(now, 60000/hr, false);         // fascia senza intervalli: un valore al secondo
+}
+
+async function startCam(){
+  const st = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"}, width:{ideal:160}, height:{ideal:120}, frameRate:{ideal:30}}});
+  const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.setAttribute("playsinline",""); v.srcObject=st; await v.play();
+  HR.torch=false;
+  try{ await st.getVideoTracks()[0].applyConstraints({advanced:[{torch:true}]}); HR.torch=true; }catch(e){}
+  HR.cam=st; HR.vid=v;
+  const c=document.createElement("canvas"); c.width=32; c.height=24; HR.cx=c.getContext("2d",{willReadFrequently:true});
+  HR.f={base:0, sm:0, prev:0, prev2:0, prevT:0, lastT:0, amp:0, lastPeak:0, ok:false, okSince:0};
+  const step=()=>{ if(!HR.cam) return; camFrame();
+    if(v.requestVideoFrameCallback) v.requestVideoFrameCallback(step); else setTimeout(step, 33); };
+  step();
+}
+function camFrame(){
+  if(HR.vid.readyState<2) return;
+  HR.cx.drawImage(HR.vid,0,0,32,24);
+  const d=HR.cx.getImageData(0,0,32,24).data; let r=0,g=0,b=0;
+  for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
+  const n=d.length/4; ppgSample(performance.now(), r/n, g/n, b/n);
+}
+// Fotopletismografia: a ogni battito il dito si riempie di sangue e diventa un po' più scuro
+function ppgSample(t, r, g, b){
+  const F=HR.f, dt = F.lastT ? Math.min(0.2,(t-F.lastT)/1000) : 0.033; F.lastT=t;
+  const finger = r>40 && r>g*1.6 && r>b*1.6;            // immagine quasi tutta rossa: il dito copre l'obiettivo
+  if(!finger){ F.ok=false; HR.status="nofinger"; return; }
+  if(!F.ok){ Object.assign(F,{ok:true, okSince:t, base:r, sm:0, prev:0, prev2:0, amp:0, lastPeak:0}); }
+  HR.status = t-F.okSince<5000 ? "warm" : "ok";
+  F.base += (r-F.base)*(1-Math.exp(-dt/0.9));           // tolgo la deriva lenta
+  F.sm += ((F.base-r)-F.sm)*(1-Math.exp(-dt/0.1));      // e il rumore veloce
+  F.amp = Math.max(F.amp*Math.exp(-dt/2.5), Math.abs(F.sm));
+  if(F.prev>F.prev2 && F.prev>=F.sm && F.prev>F.amp*0.4 && F.prevT-F.lastPeak>Math.max(330, HR.beats.length>=5 ? 0.6*median(HR.beats.slice(-5).map(x=>x.ibi)) : 0) && t-F.okSince>2000){
+    if(F.lastPeak) addBeat(F.prevT, F.prevT-F.lastPeak, true);
+    F.lastPeak=F.prevT;
+  }
+  F.prev2=F.prev; F.prev=F.sm; F.prevT=t;
+}
+function stopCam(){ try{ HR.cam?.getTracks().forEach(t=>t.stop()); }catch(e){} HR.cam=null; HR.vid=null; }
+addEventListener("pagehide", ()=>{ stopCam(); try{ HR.dev?.gatt.disconnect(); }catch(e){} });
+
+async function hrStart(){
+  HR.src=$("hrSrc").value; HR.beats=[]; HR.rej=0; HR.status=""; HR.on=false; hrMsg("");
+  if(HR.src==="cam"){
+    try{ await startCam(); HR.on=true;
+      if(!HR.torch) hrMsg("Non riesco ad accendere la torcia: avvicina il dito a una luce forte."); }
+    catch(e){ hrMsg("Fotocamera non disponibile: continuo senza battito."); }
+  } else if(HR.src==="ble"){
+    if(HR.dev) HR.on=true; else hrMsg("Fascia non collegata: continuo senza battito.");
+  }
+  $("hrLive").hidden=!HR.on;
+}
+// onda del respiro nel battito: per ogni respiro completo, battito più alto meno battito più basso
+function hrWaves(){
+  const c=S.cyc, out=[];
+  for(let i=0;i+1<c.length;i++){
+    const hs=HR.beats.filter(x=>x.t>=c[i] && x.t<c[i+1]).map(x=>x.hr);
+    if(hs.length>=4) out.push(Math.max(...hs)-Math.min(...hs));
+  }
+  return out;
+}
+const fmt1 = v => v.toFixed(1).replace(".",",");
+function hrTick(now){
+  const b=HR.beats, lastT=b.length ? b[b.length-1].t : 0;
+  const fresh = b.length>=3 && now-lastT<4000;
+  $("hrBpm").firstChild.textContent = fresh ? Math.round(median(b.slice(-5).map(x=>x.hr))) : "–";
+  const w=hrWaves().slice(-3); $("hrWave").textContent = w.length ? fmt1(w.reduce((a,x)=>a+x,0)/w.length) : "–";
+  if(HR.src==="cam") hrMsg(HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
+                           HR.status==="warm" ? "Sto cercando il battito: resta fermo." :
+                           (!fresh ? "Il segnale è debole: premi un po' meno e tieni fermo il dito." : (HR.torch?"":"Torcia spenta: tieni il dito vicino a una luce.")));
+  else if(HR.src==="ble") hrMsg(!HR.dev ? "La fascia si è scollegata." : (now-HR.liveAt>5000 ? "Non ricevo dati: controlla che la fascia tocchi bene la pelle." : ""));
+  drawHr(now);
+}
+function drawHr(now){
+  const c=$("hrCv"), w=c.clientWidth, h=c.clientHeight, d=Math.min(2,devicePixelRatio||1);
+  if(!w) return;
+  if(c.width!==Math.round(w*d)){ c.width=Math.round(w*d); c.height=Math.round(h*d); }
+  const x=c.getContext("2d"); x.setTransform(d,0,0,d,0,0); x.clearRect(0,0,w,h);
+  const span=60000, t0=now-span, X=t=>(t-t0)/span*w, L=S.phLog;
+  for(let i=0;i<L.length;i++){
+    const a=Math.max(L[i].t,t0), e=i+1<L.length ? L[i+1].t : now; if(e<t0) continue;
+    x.fillStyle = L[i].k==="in" ? "rgba(95,214,160,.18)" : "rgba(226,170,70,.18)"; x.fillRect(X(a),0,X(e)-X(a),h);
+  }
+  const p=HR.beats.filter(q=>q.t>=t0); if(p.length<2) return;
+  let lo=Math.min(...p.map(q=>q.hr)), hi=Math.max(...p.map(q=>q.hr));
+  if(hi-lo<10){ const m=(hi+lo)/2; lo=m-5; hi=m+5; }
+  const Y=v=>h-6-(v-lo)/(hi-lo)*(h-12);
+  x.strokeStyle="#f3f5f4"; x.lineWidth=2; x.lineJoin="round"; x.beginPath();
+  p.forEach((q,i)=> i ? x.lineTo(X(q.t),Y(q.hr)) : x.moveTo(X(q.t),Y(q.hr))); x.stroke();
+  x.fillStyle="rgba(243,245,244,.7)"; x.font="11px 'IBM Plex Mono', monospace";
+  x.fillText(Math.round(hi),4,12); x.fillText(Math.round(lo),4,h-4);
+}
+function hrFinish(){
+  if(!HR.on){ $("stHr").hidden=true; $("stWave").hidden=true; $("hrEndNote").hidden=true; stopCam(); return; }
+  const hs=HR.beats.map(x=>x.hr), w=hrWaves(), ww=w.length>2 ? w.slice(1) : w;  // il primo respiro serve ad assestarsi
+  $("stHr").hidden=false; $("stWave").hidden=false;
+  $("sHr").textContent = hs.length>=10 ? Math.round(hs.reduce((a,x)=>a+x,0)/hs.length) : "–";
+  $("sWave").textContent = ww.length ? fmt1(ww.reduce((a,x)=>a+x,0)/ww.length) : "–";
+  $("hrEndNote").hidden=false;
+  HR.on=false; HR.beats=[]; stopCam();
 }
 $("go").addEventListener("click",go);
 $("again").addEventListener("click",()=>{ show("intro"); });
