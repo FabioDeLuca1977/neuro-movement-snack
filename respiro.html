@@ -139,6 +139,7 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       <canvas id="hrCv" role="img" aria-label="Andamento del battito nell'ultimo minuto"></canvas>
       <div class="hrleg"><span><i style="background:rgba(95,214,160,.5)"></i>inspira</span><span><i style="background:rgba(226,170,70,.5)"></i>espira</span><span>ultimo minuto</span></div>
       <p class="small" id="hrMsg" aria-live="polite"></p>
+      <button class="btn" id="hrTorch" hidden>Accendi la torcia</button>
       <p class="small" id="hrDbg" hidden style="font-family:var(--mono);color:var(--dim)"></p>
     </div>
     <div class="row"><button class="btn" id="pause">Pausa</button><button class="btn" id="stop">Concludi</button></div>
@@ -357,6 +358,9 @@ function hrNote(){
     : "";
 }
 $("hrSrc").addEventListener("change", hrNote);
+$("hrTorch").addEventListener("click", async ()=>{ $("hrTorch").disabled=true;
+  try{ await HR.track?.applyConstraints({advanced:[{torch:false}]}); }catch(e){}
+  HR.torch = await torchOn(HR.track); $("hrTorch").disabled=false; });
 // per le prove: ?hr=cam (o ble) sceglie già il sensore, ?debug=1 mostra i valori grezzi
 const QP = new URLSearchParams(location.search), DEBUG = QP.get("debug")==="1";
 if(["cam","ble"].includes(QP.get("hr"))) $("hrSrc").value = QP.get("hr");
@@ -390,11 +394,44 @@ function onHrm(dv){
   else if(hr>0) addBeat(now, 60000/hr, false);         // fascia senza intervalli: un valore al secondo
 }
 
+const torchCap = tr => { try{ return !!(tr && tr.getCapabilities && tr.getCapabilities().torch); }catch(e){ return false; } };
+function openCam(deviceId){
+  const base={width:{ideal:320}, height:{ideal:240}, frameRate:{ideal:30}};
+  return navigator.mediaDevices.getUserMedia({audio:false, video: deviceId ? {...base, deviceId:{exact:deviceId}} : {...base, facingMode:{ideal:"environment"}}});
+}
+// accende la torcia e controlla che sia davvero accesa; null = probabilmente accesa ma il telefono non lo conferma
+async function torchOn(tr){
+  if(!tr) return false;
+  for(let i=0;i<3;i++){
+    try{ await tr.applyConstraints({advanced:[{torch:true}]}); }catch(e){}
+    await sleep(350);
+    try{ if(tr.getSettings().torch===true) return true; }catch(e){}
+  }
+  return torchCap(tr) ? null : false;
+}
 async function startCam(){
-  const st = await navigator.mediaDevices.getUserMedia({audio:false, video:{facingMode:{ideal:"environment"}, width:{ideal:160}, height:{ideal:120}, frameRate:{ideal:30}}});
+  let st = await openCam(), tr = st.getVideoTracks()[0];
+  // telefoni con più fotocamere posteriori: cerco quella che ha il flash, aprendole una alla volta
+  if(!torchCap(tr)){
+    const first = tr.getSettings().deviceId;
+    try{
+      const devs = (await navigator.mediaDevices.enumerateDevices())
+        .filter(d=>d.kind==="videoinput" && d.deviceId && d.deviceId!==first && !/front|anterior|user|selfie|frontale/i.test(d.label));
+      if(devs.length){
+        st.getTracks().forEach(t=>t.stop()); st=null;
+        for(const d of devs){
+          let s2; try{ s2=await openCam(d.deviceId); }catch(e){ continue; }
+          if(torchCap(s2.getVideoTracks()[0])){ st=s2; break; }
+          s2.getTracks().forEach(t=>t.stop());
+        }
+        if(!st) st = await openCam(first);
+        tr = st.getVideoTracks()[0];
+      }
+    }catch(e){ if(!st){ st=await openCam(); tr=st.getVideoTracks()[0]; } }
+  }
   const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.setAttribute("playsinline",""); v.srcObject=st; await v.play();
-  HR.torch=false;
-  try{ await st.getVideoTracks()[0].applyConstraints({advanced:[{torch:true}]}); HR.torch=true; }catch(e){}
+  HR.track=tr; HR.camLabel=tr.label||""; HR.torchCap=torchCap(tr);
+  HR.torch = await torchOn(tr);
   HR.cam=st; HR.vid=v; HR.fr=[]; HR.fps=0; HR.camAt=performance.now();
   const c=document.createElement("canvas"); c.width=32; c.height=24; HR.cx=c.getContext("2d",{willReadFrequently:true});
   HR.f={base:0, sm:0, prev:0, prev2:0, prevT:0, lastT:0, amp:0, lastPeak:0, ok:false, okSince:0};
@@ -437,7 +474,7 @@ async function hrStart(){
   HR.src=$("hrSrc").value; HR.beats=[]; HR.rej=0; HR.status=""; HR.on=false; hrMsg("");
   if(HR.src==="cam"){
     try{ await startCam(); HR.on=true;
-      if(!HR.torch) hrMsg("Non riesco ad accendere la torcia: avvicina il dito a una luce forte."); }
+      if(HR.torch===false) hrMsg("Non riesco ad accendere la torcia: premi «Accendi la torcia» o avvicina il dito a una luce forte."); }
     catch(e){ hrMsg("Fotocamera non disponibile: continuo senza battito."); }
   } else if(HR.src==="ble"){
     if(HR.dev) HR.on=true; else hrMsg("Fascia non collegata: continuo senza battito.");
@@ -465,12 +502,13 @@ function hrTick(now){
   if(HR.src==="cam") hrMsg(HR.status==="slow" ? `La fotocamera va troppo lenta (${Math.round(HR.fps)} fotogrammi al secondo): il battito non si legge bene su questo telefono.` :
                            HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
                            HR.status==="warm" ? "Sto cercando il battito: resta fermo." :
-                           (!fresh ? "Il segnale è debole: premi un po' meno e tieni fermo il dito." : (HR.torch?"":"Torcia spenta: tieni il dito vicino a una luce.")));
+                           (!fresh ? (HR.torch===false ? "Il segnale è debole perché la torcia è spenta: premi «Accendi la torcia», oppure punta il dito verso una lampada." : "Il segnale è debole: premi un po' meno e tieni fermo il dito.") : (HR.torch!==false?"":"Torcia spenta: tieni il dito vicino a una luce.")));
   else if(HR.src==="ble") hrMsg(!HR.dev ? "La fascia si è scollegata." : (now-HR.liveAt>5000 ? "Non ricevo dati: controlla che la fascia tocchi bene la pelle." : ""));
+  $("hrTorch").hidden = !(HR.src==="cam" && HR.torch===false);
   drawHr(now);
   if(DEBUG){ $("hrDbg").hidden=false; const D=HR.dbg||{frames:[]};
     $("hrDbg").textContent = HR.src==="cam"
-      ? `torcia ${HR.torch?"sì":"no"} · ${D.frames.length} fps · R ${Math.round(D.r||0)} G ${Math.round(D.g||0)} B ${Math.round(D.b||0)} · stato ${HR.status||"-"} · battiti ${HR.beats.length}`
+      ? `torcia ${HR.torch===true?"sì":HR.torch===null?"forse":"no"} (flash ${HR.torchCap?"sì":"no"}) · ${HR.camLabel||"fotocamera"} · ${D.frames.length} fps · R ${Math.round(D.r||0)} G ${Math.round(D.g||0)} B ${Math.round(D.b||0)} · stato ${HR.status||"-"} · battiti ${HR.beats.length}`
       : `fascia ${HR.dev?"sì":"no"} · ultimo dato ${HR.liveAt?Math.round((now-HR.liveAt)/1000)+" s fa":"-"} · battiti ${HR.beats.length}`; }
 }
 function drawHr(now){
