@@ -139,6 +139,7 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       <canvas id="hrCv" role="img" aria-label="Andamento del battito nell'ultimo minuto"></canvas>
       <div class="hrleg"><span><i style="background:rgba(95,214,160,.5)"></i>inspira</span><span><i style="background:rgba(226,170,70,.5)"></i>espira</span><span>ultimo minuto</span></div>
       <p class="small" id="hrMsg" aria-live="polite"></p>
+      <p class="small" id="hrDbg" hidden style="font-family:var(--mono);color:var(--dim)"></p>
     </div>
     <div class="row"><button class="btn" id="pause">Pausa</button><button class="btn" id="stop">Concludi</button></div>
   </div>
@@ -356,6 +357,9 @@ function hrNote(){
     : "";
 }
 $("hrSrc").addEventListener("change", hrNote);
+// per le prove: ?hr=cam (o ble) sceglie già il sensore, ?debug=1 mostra i valori grezzi
+const QP = new URLSearchParams(location.search), DEBUG = QP.get("debug")==="1";
+if(["cam","ble"].includes(QP.get("hr"))) $("hrSrc").value = QP.get("hr");
 $("hrConnect").addEventListener("click", connectStrap);
 hrNote();
 
@@ -391,7 +395,7 @@ async function startCam(){
   const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.setAttribute("playsinline",""); v.srcObject=st; await v.play();
   HR.torch=false;
   try{ await st.getVideoTracks()[0].applyConstraints({advanced:[{torch:true}]}); HR.torch=true; }catch(e){}
-  HR.cam=st; HR.vid=v;
+  HR.cam=st; HR.vid=v; HR.fr=[]; HR.fps=0; HR.camAt=performance.now();
   const c=document.createElement("canvas"); c.width=32; c.height=24; HR.cx=c.getContext("2d",{willReadFrequently:true});
   HR.f={base:0, sm:0, prev:0, prev2:0, prevT:0, lastT:0, amp:0, lastPeak:0, ok:false, okSince:0};
   const step=()=>{ if(!HR.cam) return; camFrame();
@@ -403,7 +407,10 @@ function camFrame(){
   HR.cx.drawImage(HR.vid,0,0,32,24);
   const d=HR.cx.getImageData(0,0,32,24).data; let r=0,g=0,b=0;
   for(let i=0;i<d.length;i+=4){ r+=d[i]; g+=d[i+1]; b+=d[i+2]; }
-  const n=d.length/4; ppgSample(performance.now(), r/n, g/n, b/n);
+  const n=d.length/4, now=performance.now();
+  const FR=HR.fr||(HR.fr=[]); FR.push(now); while(FR.length && now-FR[0]>2000) FR.shift(); HR.fps=FR.length/2;
+  if(DEBUG){ const D=HR.dbg||(HR.dbg={frames:[]}); D.r=r/n; D.g=g/n; D.b=b/n; D.frames.push(now); while(D.frames.length && now-D.frames[0]>1000) D.frames.shift(); }
+  ppgSample(now, r/n, g/n, b/n);
 }
 // Fotopletismografia: a ogni battito il dito si riempie di sangue e diventa un po' più scuro
 function ppgSample(t, r, g, b){
@@ -411,6 +418,8 @@ function ppgSample(t, r, g, b){
   const finger = r>40 && r>g*1.6 && r>b*1.6;            // immagine quasi tutta rossa: il dito copre l'obiettivo
   if(!finger){ F.ok=false; HR.status="nofinger"; return; }
   if(!F.ok){ Object.assign(F,{ok:true, okSince:t, base:r, sm:0, prev:0, prev2:0, amp:0, lastPeak:0}); }
+  // sotto i 15 fotogrammi al secondo il battito non si legge in modo affidabile: non conto
+  if(t-F.okSince>2000 && HR.fps<15){ HR.status="slow"; F.lastPeak=0; return; }
   HR.status = t-F.okSince<5000 ? "warm" : "ok";
   F.base += (r-F.base)*(1-Math.exp(-dt/0.9));           // tolgo la deriva lenta
   F.sm += ((F.base-r)-F.sm)*(1-Math.exp(-dt/0.1));      // e il rumore veloce
@@ -448,13 +457,21 @@ const fmt1 = v => v.toFixed(1).replace(".",",");
 function hrTick(now){
   const b=HR.beats, lastT=b.length ? b[b.length-1].t : 0;
   const fresh = b.length>=3 && now-lastT<4000;
+  if(HR.src==="cam" && HR.fr && now-HR.camAt>3000){                 // fotocamera lenta o ferma
+    HR.fps = HR.fr.filter(x=>now-x<2000).length/2;
+    if(HR.fps<15) HR.status="slow"; else if(HR.status==="slow") HR.status="warm"; }
   $("hrBpm").firstChild.textContent = fresh ? Math.round(median(b.slice(-5).map(x=>x.hr))) : "–";
   const w=hrWaves().slice(-3); $("hrWave").textContent = w.length ? fmt1(w.reduce((a,x)=>a+x,0)/w.length) : "–";
-  if(HR.src==="cam") hrMsg(HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
+  if(HR.src==="cam") hrMsg(HR.status==="slow" ? `La fotocamera va troppo lenta (${Math.round(HR.fps)} fotogrammi al secondo): il battito non si legge bene su questo telefono.` :
+                           HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
                            HR.status==="warm" ? "Sto cercando il battito: resta fermo." :
                            (!fresh ? "Il segnale è debole: premi un po' meno e tieni fermo il dito." : (HR.torch?"":"Torcia spenta: tieni il dito vicino a una luce.")));
   else if(HR.src==="ble") hrMsg(!HR.dev ? "La fascia si è scollegata." : (now-HR.liveAt>5000 ? "Non ricevo dati: controlla che la fascia tocchi bene la pelle." : ""));
   drawHr(now);
+  if(DEBUG){ $("hrDbg").hidden=false; const D=HR.dbg||{frames:[]};
+    $("hrDbg").textContent = HR.src==="cam"
+      ? `torcia ${HR.torch?"sì":"no"} · ${D.frames.length} fps · R ${Math.round(D.r||0)} G ${Math.round(D.g||0)} B ${Math.round(D.b||0)} · stato ${HR.status||"-"} · battiti ${HR.beats.length}`
+      : `fascia ${HR.dev?"sì":"no"} · ultimo dato ${HR.liveAt?Math.round((now-HR.liveAt)/1000)+" s fa":"-"} · battiti ${HR.beats.length}`; }
 }
 function drawHr(now){
   const c=$("hrCv"), w=c.clientWidth, h=c.clientHeight, d=Math.min(2,devicePixelRatio||1);
