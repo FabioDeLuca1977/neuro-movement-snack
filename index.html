@@ -12,17 +12,33 @@
 <meta name="apple-mobile-web-app-title" content="Neuro Snack">
 <title>Neuro Movement Snack</title>
 <link rel="stylesheet" href="fonts/fonts.css">
+<script>try{const t=localStorage.getItem("nms-theme"); if(t==="light"||t==="dark") document.documentElement.dataset.theme=t;}catch(e){}</script>
 <style>
 /* Layout: lo stile di Movement Snack. Fondo nebbia, petrolio per la calma, verde per i numeri, ocra per l'energia; titoli con grazie, testo pulito. */
 :root{
   --bg:#f3f5f4; --surface:#ffffff; --solid:#ffffff; --fg:#2f3437; --muted:#5f6365; --soft:#e4e9e7; --line:#d5dddb;
-  --petrol:#1f4e5f; --green:#1d9e75; --green-ink:#14785a; --ochre:#c68a18; --ochre-ink:#8f6210; --mint:#eef7f3; --cream:#fbf6ec; --mist:#bfd2d8;
+  --petrol:#1f4e5f; --petrol-ink:#1f4e5f; --green:#1d9e75; --green-ink:#14785a; --ochre:#c68a18; --ochre-ink:#8f6210; --mint:#eef7f3; --cream:#fbf6ec; --mist:#bfd2d8;
   --calm:#1f4e5f; --act:#b57a10; --neu:#1d9e75; --night:#1f4e5f; --night-ink:#f3f5f4;
   --energy:#2a78d6; --tension:#eb6834; --pain:#13865d; --warn:#8f6210; --warn-soft:#fbf6ec;
   --display:"Caladea", Cambria, Georgia, serif;
   --body:"Lato", Calibri, "Segoe UI", system-ui, sans-serif;
   --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
   color-scheme:light;
+}
+/* Modalità scura: segue il telefono, oppure la scelta fatta in Info */
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#141a1c; --surface:#1e2629; --solid:#1e2629; --fg:#e4eae8; --muted:#a2acae; --soft:#2b3437; --line:#3a4547;
+  --petrol:#1f4e5f; --petrol-ink:#8fc6d6; --green:#2fb88a; --green-ink:#62d3a8; --ochre:#d9a032; --ochre-ink:#e8bc62; --mint:#16302a; --cream:#2d2618; --mist:#bfd2d8;
+  --calm:#2c6d83; --act:#c68a18; --neu:#2fb88a; --night:#173c49; --night-ink:#eef2f1;
+  --energy:#5b9be6; --tension:#f0814f; --pain:#3fbf8c; --warn:#e8bc62; --warn-soft:#2d2618;
+  color-scheme:dark;
+} }
+:root[data-theme="dark"]{
+  --bg:#141a1c; --surface:#1e2629; --solid:#1e2629; --fg:#e4eae8; --muted:#a2acae; --soft:#2b3437; --line:#3a4547;
+  --petrol:#1f4e5f; --petrol-ink:#8fc6d6; --green:#2fb88a; --green-ink:#62d3a8; --ochre:#d9a032; --ochre-ink:#e8bc62; --mint:#16302a; --cream:#2d2618; --mist:#bfd2d8;
+  --calm:#2c6d83; --act:#c68a18; --neu:#2fb88a; --night:#173c49; --night-ink:#eef2f1;
+  --energy:#5b9be6; --tension:#f0814f; --pain:#3fbf8c; --warn:#e8bc62; --warn-soft:#2d2618;
+  color-scheme:dark;
 }
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 [hidden]{display:none!important}
@@ -51,7 +67,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .tagline{font-size:.72rem;letter-spacing:.06em;color:var(--mist);margin:2px 0 0 28px}
 .neuro{background:var(--bg);border-radius:6px;padding:0 12px}
 .neuro summary{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;min-height:48px;padding:10px 0;cursor:pointer}
-.neuro summary b{font-family:var(--display);font-size:1.05rem;color:var(--petrol)}
+.neuro summary b{font-family:var(--display);font-size:1.05rem;color:var(--petrol-ink)}
 .neuro summary span{font-size:.75rem;color:var(--green-ink);font-weight:700}
 .brand h1 i{display:none}
 .brand h1::before{display:none;content:"";flex:none;width:18px;height:18px;border-radius:50%;border:3px solid #3fc495;box-sizing:border-box;animation:breathe 10s ease-in-out infinite}
@@ -60,7 +76,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .brand .next{flex:none;font-size:.64rem;max-width:7.5rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mist);text-align:right}
 nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-bottom:1px solid var(--line);padding:0 max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
 nav.tabs button{border:0;background:none;padding:12px 2px 10px;font-size:.8rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:3px solid transparent;min-height:46px}
-nav.tabs button[aria-selected="true"]{color:var(--petrol);border-bottom-color:var(--green)}
+nav.tabs button[aria-selected="true"]{color:var(--petrol-ink);border-bottom-color:var(--green)}
 main{display:grid;gap:22px;padding-top:24px}
 section.view{display:grid;gap:18px}
 .big{font-size:2.3rem}
@@ -81,16 +97,16 @@ select{font:inherit;min-height:44px;padding:0 10px;border:1px solid var(--line);
 /* Check-in: riquadro energia × tensione */
 .padwrap{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;gap:6px 8px}
 .ylab{display:flex;flex-direction:column;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--muted)}
-.ylab b{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.95rem;color:var(--petrol)}
+.ylab b{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.95rem;color:var(--petrol-ink)}
 .xlab{grid-column:2;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;color:var(--muted)}
-.xlab b{font-size:.95rem;color:var(--petrol)}
+.xlab b{font-size:.95rem;color:var(--petrol-ink)}
 .pad{position:relative;aspect-ratio:1/0.82;width:100%;border:0;border-radius:8px;overflow:hidden;padding:0;display:block;background:var(--surface);box-shadow:0 1px 2px rgba(47,52,55,.06)}
 .pad::before{content:"";position:absolute;left:50%;top:0;right:0;bottom:0;background:var(--mint)}
 .pad::after{content:"";position:absolute;left:0;top:0;width:50%;bottom:50%;background:var(--cream)}
 .pad .qv{position:absolute;left:50%;top:0;bottom:0;border-left:1px solid var(--line);z-index:1}
 .pad .qh{position:absolute;top:50%;left:0;right:0;border-top:1px solid var(--line);z-index:1}
 .pad .q{position:absolute;font-size:.72rem;color:var(--muted);pointer-events:none;margin:6px 8px;z-index:1}
-.mark{position:absolute;z-index:2;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--fg);border:4px solid #ffffff;box-shadow:0 2px 8px rgba(47,52,55,.3);transition:left .2s,top .2s,background .2s}
+.mark{position:absolute;z-index:2;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:var(--fg);border:4px solid var(--surface);box-shadow:0 2px 8px rgba(47,52,55,.3);transition:left .2s,top .2s,background .2s}
 .readout{font-size:.75rem;font-weight:700;letter-spacing:.12em;color:var(--green-ink)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{position:relative;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer}
@@ -109,13 +125,13 @@ details.alt summary{cursor:pointer;font-size:.85rem;color:var(--muted);min-heigh
 .label .rule{height:2px;background:var(--green);width:48px;margin:12px 0 4px}
 .lrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--soft)}
 .lrow:last-child{border-bottom:0}
-.lrow > b{font-weight:700;flex:none;color:var(--petrol)}
+.lrow > b{font-weight:700;flex:none;color:var(--petrol-ink)}
 .lrow > span{font-size:.95rem;text-align:right}
 #shPreview .lrow > b{flex:1 1 auto;font-weight:600;font-size:.9rem}
 #shPreview .lrow > span{flex:none}
 .lstack{padding:9px 0;border-bottom:1px solid var(--soft);display:grid;gap:3px}
 .lstack:last-child{border-bottom:0}
-.lstack > b{font-weight:700;color:var(--petrol)}
+.lstack > b{font-weight:700;color:var(--petrol-ink)}
 .lstack > span{font-size:.93rem;line-height:1.5;color:var(--muted)}
 .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 .legend-ev{font-size:.8rem;line-height:1.6;color:var(--muted);font-style:italic}
@@ -160,7 +176,7 @@ details.alt summary{cursor:pointer;font-size:.85rem;color:var(--muted);min-heigh
 .segs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;height:8px}
 .segs span{border-radius:4px;background:var(--mist)}
 .segs span.done{background:var(--ochre)}
-.bigname{font-family:var(--display);font-weight:700;font-size:clamp(2.3rem,11vw,3.4rem);line-height:1.05;overflow-wrap:anywhere;color:var(--petrol)}
+.bigname{font-family:var(--display);font-weight:700;font-size:clamp(2.3rem,11vw,3.4rem);line-height:1.05;overflow-wrap:anywhere;color:var(--petrol-ink)}
 .bigtime{font-family:var(--display);font-weight:700;font-size:clamp(5rem,28vw,8rem);line-height:1;color:var(--green)}
 .nextup{border-top:1px solid var(--line);padding-top:10px;font-size:1.1rem;color:var(--muted)}
 .ctrl{display:flex;gap:10px}
@@ -181,12 +197,12 @@ details.alt summary{cursor:pointer;font-size:.85rem;color:var(--muted);min-heigh
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--muted)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend svg{width:24px;height:8px}
-.tip{position:absolute;pointer-events:none;background:var(--fg);color:#ffffff;font-size:.75rem;padding:6px 8px;border-radius:4px;white-space:nowrap;transform:translate(-50%,-110%)}
+.tip{position:absolute;pointer-events:none;background:var(--fg);color:var(--bg);font-size:.75rem;padding:6px 8px;border-radius:4px;white-space:nowrap;transform:translate(-50%,-110%)}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:.9rem}
 th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--soft)}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
-.badge-ex{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--ochre-ink);color:#ffffff;border-radius:4px;padding:2px 8px}
+.badge-ex{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--ochre-ink);color:var(--bg);border-radius:4px;padding:2px 8px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateX(-50%);background:var(--petrol);color:#ffffff;padding:12px 20px;border-radius:6px;z-index:30;font-weight:700}
 ul.plain{margin:0;padding-left:1.2em;display:grid;gap:6px}
 .range.energy input{accent-color:var(--energy)}
@@ -481,6 +497,11 @@ select{max-width:100%}
       <div class="box">
         <h3>Da dove vengono gli esercizi</h3>
         <p>Le schede MS vengono dal <i>Catalogo dei protocolli</i> di Movement Snack (Centro del Loto · Maieutike, v1.0, luglio 2026), dove ogni fonte è verificata. Le schede PS vengono dal progetto Pit Stop. Le schede sono ordinate secondo le sei routine del Centro del Loto (Mind Focus, Energy Boost, Metabolismo &amp; Flusso, Postural Reset, Stair Boost, Co-regolazione): le schede MS stanno nella routine della loro area del catalogo, le schede PS sono assegnate dall'app in base alla direzione. Le tre schede di competenza del Centro del Loto (4.3, 5.3, 6.2) sono in preparazione e compariranno quando saranno pronte; anche i video dimostrativi sono in arrivo.</p>
+      </div>
+      <div class="box">
+        <h3>Aspetto</h3>
+        <label class="row" for="theme"><span>Colori</span>
+          <select id="theme"><option value="auto">Come il telefono</option><option value="light">Chiari</option><option value="dark">Scuri</option></select></label>
       </div>
       <div class="box">
         <h3>Privacy e limiti</h3>
@@ -846,7 +867,7 @@ function dirKey(x){
 const DIRVAR = {calm:"var(--calm)", act:"var(--act)", neu:"var(--neu)", ink:"var(--fg)"};
 const dirColor = x => DIRVAR[dirKey(x)];
 // per il testo uso le tinte scure: contrasto sufficiente sul bianco
-const DIRINK = {calm:"var(--calm)", act:"var(--ochre-ink)", neu:"var(--green-ink)", ink:"var(--fg)"};
+const DIRINK = {calm:"var(--petrol-ink)", act:"var(--ochre-ink)", neu:"var(--green-ink)", ink:"var(--fg)"};
 const dirInk = x => DIRINK[dirKey(x)];
 
 // ---------- Stato salvato (solo su questo dispositivo) ----------
@@ -1298,6 +1319,10 @@ renderNeuro();
 // ---------- Diario ----------
 function clearExamples(silent){ S={example:false,days:[],sessions:[],exp:null,amb:S.amb,l2ok:S.l2ok}; save(); if(!silent){ renderDiary(); toast("Esempi cancellati"); } }
 $("clearExamples").addEventListener("click",()=>clearExamples(false));
+$("theme").value = document.documentElement.dataset.theme || "auto";
+$("theme").addEventListener("change",e=>{ const v=e.target.value;
+  if(v==="auto") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme=v;
+  try{ if(v==="auto") localStorage.removeItem("nms-theme"); else localStorage.setItem("nms-theme", v); }catch(e){} });
 $("wipeAll").addEventListener("click",()=>{
   if(!confirm("Cancello diario, sessioni, esperimento e promemoria da questo dispositivo. Non si può annullare. Procedo?")) return;
   try{ [KEY, TKEY].forEach(k=>localStorage.removeItem(k)); }catch(e){}
