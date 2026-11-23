@@ -252,7 +252,8 @@ async function go(){
   }
   await hrStart();
   try{ wake = await navigator.wakeLock?.request("screen"); }catch(e){}
-  S = {cyc:[], phLog:[], dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
+  $("pause").textContent="Pausa";
+  S = {cyc:[], phLog:[], pauses:[], dur:+$("dur").value*60000, t0:performance.now(), paused:0, pauseAt:0, idx:0, phaseT0:performance.now(),
        match:0, total:0, exhales:[], onAt:0, ph:{in:0,inLoud:0,out:0,outLoud:0}, feedback:""};
   $("liveMeter").hidden = !an; $("syncBox").hidden = !an; $("syncPct").textContent="–";
   show("live"); startPhase();
@@ -263,7 +264,9 @@ function startPhase(){
   const p=phase(); S.phaseT0=performance.now(); S.ph={in:0,inLoud:0,out:0,outLoud:0};
   S.phLog.push({t:S.phaseT0, k:p.k}); if(S.phLog.length>200) S.phLog.shift();
   if(S.idx % P.phases.length===0) S.cyc.push(S.phaseT0);
-  $("phase").textContent=p.l; speak(p.l);
+  $("phase").textContent=p.l;
+  const cue = (typeof SYNC!=="undefined" && SYNC.cue) ? ". "+SYNC.cue : ""; if(cue) SYNC.cue="";
+  speak(p.l+cue);
 }
 function endPhase(){
   // un consiglio breve, solo se il microfono è attivo
@@ -275,7 +278,7 @@ function endPhase(){
   }
   S.idx++;
   // si chiude sempre alla fine di un ciclo completo
-  if(performance.now()-S.t0-S.paused>=S.dur && S.idx%P.phases.length===0){ finish(); return; }
+  if(performance.now()-S.t0-S.paused>=S.dur && S.idx%P.phases.length===0){ finish(true); return; }
   startPhase();
 }
 // la logica gira a 20 Hz con un timer, il disegno con requestAnimationFrame:
@@ -315,7 +318,7 @@ function tick(now){
     if(el>=p.s) endPhase();
   }
 }
-function finish(){
+function finish(complete){
   const pausing=S.pauseAt ? performance.now()-S.pauseAt : 0; // se concludi in pausa, la pausa non conta
   const elapsedMin=(performance.now()-S.t0-S.paused-pausing)/60000;
   const cycle=P.phases.reduce((a,p)=>a+p.s,0);
@@ -332,7 +335,7 @@ function finish(){
     $("sBreaths").textContent=guided; $("sRate").textContent=(60/cycle).toFixed(1).replace(".",","); $("sSync").textContent="–";
     $("endNote").textContent="Senza microfono conto i respiri guidati, non quelli che hai fatto davvero.";
   }
-  if(S.idx % P.phases.length===0) S.cyc.push(performance.now()); hrFinish();
+  if(complete) S.cyc.push(performance.now()); hrFinish();             // un respiro a metà non conta
   speak("Fatto. Ottimo lavoro.");
   stopMic(); try{ wake?.release(); }catch(e){}
   S=null; $("phase").textContent=""; $("count").textContent=""; $("hint").textContent="";
@@ -380,9 +383,9 @@ async function connectStrap(){
     const dev = await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
     const srv = await (await dev.gatt.connect()).getPrimaryService("heart_rate");
     const ch = await srv.getCharacteristic("heart_rate_measurement");
-    ch.addEventListener("characteristicvaluechanged", e=>onHrm(e.target.value));
+    if(!ch.__nms){ ch.__nms=true; ch.addEventListener("characteristicvaluechanged", e=>onHrm(e.target.value)); }
     await ch.startNotifications();
-    dev.addEventListener("gattserverdisconnected", ()=>{ HR.dev=null; hrMsg("La fascia si è scollegata."); hrNote(); });
+    if(!dev.__nms){ dev.__nms=true; dev.addEventListener("gattserverdisconnected", ()=>{ if(HR.dev!==dev) return; HR.dev=null; hrMsg("La fascia si è scollegata."); hrNote(); }); }
     if(HR.dev && HR.dev!==dev) try{ HR.dev.gatt.disconnect(); }catch(e){}
     HR.dev=dev; $("hrNote").textContent="Fascia collegata. Il battito resta su questo dispositivo e non viene salvato.";
   }catch(e){
@@ -399,7 +402,7 @@ function onHrm(dv){
   HR.live=hr; HR.liveAt=now;
   if(!HR.on) return;
   if(rr.length){ let t=now; for(let i=rr.length-1;i>=0;i--){ addBeat(t, rr[i], false); t-=rr[i]; } HR.beats.sort((a,b)=>a.t-b.t); }
-  else if(hr>0) addBeat(now, 60000/hr, false);         // fascia senza intervalli: un valore al secondo
+  else if(hr>0 && !(f&16)) addBeat(now, 60000/hr, false); // solo fasce che non mandano mai gli intervalli: un valore al secondo
 }
 
 const torchCap = tr => { try{ return !!(tr && tr.getCapabilities && tr.getCapabilities().torch); }catch(e){ return false; } };
@@ -466,21 +469,26 @@ function ppgSample(t, r, g, b){
   // sotto i 15 fotogrammi al secondo il battito non si legge in modo affidabile: non conto
   if(t-F.okSince>2000 && HR.fps<15){ HR.status="slow"; F.lastPeak=0; return; }
   HR.status = t-F.okSince<5000 ? "warm" : "ok";
-  F.base += (r-F.base)*(1-Math.exp(-dt/0.9));           // tolgo la deriva lenta
+  F.base += (r-F.base)*(1-Math.exp(-dt/0.35));          // tolgo la deriva lenta, compresa quella del respiro
   F.sm += ((F.base-r)-F.sm)*(1-Math.exp(-dt/0.1));      // e il rumore veloce
   F.amp = Math.max(F.amp*Math.exp(-dt/2.5), Math.abs(F.sm));
-  if(F.prev>F.prev2 && F.prev>=F.sm && F.prev>F.amp*0.4 && F.prevT-F.lastPeak>Math.max(330, HR.beats.length>=5 ? 0.6*median(HR.beats.slice(-5).map(x=>x.ibi)) : 0) && t-F.okSince>2000){
-    if(F.lastPeak) addBeat(F.prevT, F.prevT-F.lastPeak, true);
-    F.lastPeak=F.prevT;
+  // finché non conosco il ritmo, almeno 500 ms tra due battiti: evita di contare due volte lo stesso battito
+  const refr = HR.beats.length>=5 ? Math.max(330, 0.45*median(HR.beats.slice(-5).map(x=>x.ibi))) : 500;
+  if(F.prev>F.prev2 && F.prev>=F.sm && F.prev>F.amp*0.4 && F.prevT-F.lastPeak>refr && t-F.okSince>2000){
+    // il picco vero cade tra due fotogrammi: lo stimo con una parabola sui tre campioni
+    const den=F.prev2-2*F.prev+F.sm, off = den<0 ? Math.max(-0.5,Math.min(0.5,0.5*(F.prev2-F.sm)/den)) : 0;
+    const pt = F.prevT + off*(F.prev2T ? (t-F.prev2T)/2 : 0);
+    if(F.lastPeak) addBeat(pt, pt-F.lastPeak, true);
+    F.lastPeak=pt;
   }
-  F.prev2=F.prev; F.prev=F.sm; F.prevT=t;
+  F.prev2=F.prev; F.prev2T=F.prevT; F.prev=F.sm; F.prevT=t;
 }
 function stopCam(){ try{ HR.cam?.getTracks().forEach(t=>t.stop()); }catch(e){} HR.cam=null; HR.vid=null; }
 addEventListener("pagehide", ()=>{ stopCam(); try{ HR.dev?.gatt.disconnect(); }catch(e){} });
 
 async function hrStart(){
   syReset();
-  HR.src=$("hrSrc").value; HR.beats=[]; HR.rej=0; HR.status=""; HR.on=false; hrMsg("");
+  HR.src=$("hrSrc").value; HR.beats=[]; HR.rej=0; HR.rejIbi=0; HR.status=""; HR.on=false; hrMsg("");
   if(HR.src==="cam"){
     try{ await startCam(); HR.on=true;
       if(HR.torch===false) hrMsg("Non riesco ad accendere la torcia: premi «Accendi la torcia» o avvicina il dito a una luce forte."); }
@@ -490,12 +498,28 @@ async function hrStart(){
   }
   $("hrLive").hidden=!HR.on;
 }
+// battiti puliti: tolgo quelli lontani più del 20% dalla mediana dei 5 battiti attorno (errori di lettura,
+// battiti saltati o doppi) e i doppioni con lo stesso istante. La variazione vera del battito col respiro resta.
+function cleanBeats(b0){
+  const out=[];
+  for(let i=0;i<b0.length;i++){
+    const m=median(b0.slice(Math.max(0,i-2),i+3).map(y=>y.ibi));
+    if(Math.abs(b0[i].ibi-m)>m*0.2) continue;
+    if(out.length && b0[i].t-out[out.length-1].t<1) continue;
+    out.push(b0[i]);
+  }
+  return out;
+}
 // onda del respiro nel battito: per ogni respiro completo, battito più alto meno battito più basso
+// (sui battiti puliti; con la fotocamera anche una mediana su 3 battiti; salto i respiri con una pausa)
 function hrWaves(){
-  const c=S.cyc, out=[];
+  const c=S.cyc, out=[], cb=cleanBeats(HR.beats), pz=S.pauses||[];
   for(let i=0;i+1<c.length;i++){
-    const hs=HR.beats.filter(x=>x.t>=c[i] && x.t<c[i+1]).map(x=>x.hr);
-    if(hs.length>=4) out.push(Math.max(...hs)-Math.min(...hs));
+    if(pz.some(p=>p.a<c[i+1] && p.b>c[i])) continue;
+    const hs=cb.filter(x=>x.t>=c[i] && x.t<c[i+1]).map(x=>x.hr);
+    if(hs.length<4) continue;
+    const sm = HR.src==="cam" ? hs.map((v,k)=>median(hs.slice(Math.max(0,k-1),k+2))) : hs;   // la fotocamera ha più rumore
+    out.push(Math.max(...sm)-Math.min(...sm));
   }
   return out;
 }
@@ -529,6 +553,7 @@ function drawHr(now){
   const span=60000, t0=now-span, X=t=>(t-t0)/span*w, L=S.phLog;
   for(let i=0;i<L.length;i++){
     const a=Math.max(L[i].t,t0), e=i+1<L.length ? L[i+1].t : now; if(e<t0) continue;
+    if(L[i].k==="pause") continue;
     x.fillStyle = L[i].k==="in" ? "rgba(95,214,160,.18)" : "rgba(226,170,70,.18)"; x.fillRect(X(a),0,X(e)-X(a),h);
   }
   const p=HR.beats.filter(q=>q.t>=t0); if(p.length<2) return;
@@ -549,22 +574,20 @@ const CYCLE_S = P.phases.reduce((a,p)=>a+p.s,0), F0 = 1/CYCLE_S;
 const SY_LEVELS = ["bassa","media","alta"], SY_MIN = {media:1, alta:3};
 const SY_TIPS = ["Allunga l'espirazione, senza forzare.", "Lascia scendere le spalle.", "Respira piano, come se il respiro arrivasse da solo."];
 const SYNC = {};
-function syReset(){ Object.assign(SYNC, {level:null, ratio:null, at:0, hist:[], lastCue:0, lowSince:0, tip:0, time:{bassa:0,media:0,alta:0}, first:null, lastTick:0, down:0}); }
+function syReset(){ Object.assign(SYNC, {level:null, ratio:null, at:0, hist:[], lastCue:-1e9, lowSince:0, tip:0, time:{bassa:0,media:0,alta:0}, first:null, last:null, lastTick:0, raws:[], raw:null, cue:"", tipAt:0}); }
 syReset();
 const SY_WIN = 32000, SY_EVERY = 3000;
 function syncCompute(now, beats){
   const b0 = beats.filter(x=>x.t>=now-SY_WIN);
-  // tolgo i battiti isolati fuori scala (errori di lettura): oltre il 20% dalla mediana dei vicini
-  const b = b0.filter((x,i)=>{ const nb=b0.slice(Math.max(0,i-3),i).concat(b0.slice(i+1,i+4)).map(y=>y.ibi);
-    return nb.length<3 || Math.abs(x.ibi-median(nb))<=median(nb)*0.2; });
+  for(let i=1;i<b0.length;i++) if(b0[i].t-b0[i-1].t>3000) return {bad:true}; // segnale davvero interrotto
+  const b = cleanBeats(b0);
   const span = b.length>1 ? b[b.length-1].t-b[0].t : 0;
   if(b.length<18 || span<24000) return null;                          // troppo pochi dati
-  for(let i=1;i<b.length;i++) if(b[i].t-b[i-1].t>3000) return {bad:true}; // segnale interrotto
   // battito ricampionato a 4 Hz, senza media e tendenza lineare
   const fs=4, t0=b[0].t, n=Math.floor(span/1000*fs), x=new Float64Array(n);
   let j=0;
   for(let i=0;i<n;i++){ const t=t0+i*1000/fs; while(j<b.length-2 && b[j+1].t<t) j++;
-    const a=b[j], c=b[j+1], u=Math.max(0,Math.min(1,(t-a.t)/(c.t-a.t))); x[i]=a.hr+(c.hr-a.hr)*u; }
+    const a=b[j], c=b[j+1], u=Math.max(0,Math.min(1,(t-a.t)/Math.max(1,c.t-a.t))); x[i]=a.hr+(c.hr-a.hr)*u; }
   let sx=0, sy=0, sxx=0, sxy=0; for(let i=0;i<n;i++){ sx+=i; sy+=x[i]; sxx+=i*i; sxy+=i*x[i]; }
   const k=(n*sxy-sx*sy)/(n*sxx-sx*sx), q=(sy-k*sx)/n;
   let tot=0; for(let i=0;i<n;i++){ x[i]-=k*i+q; tot+=x[i]*x[i]; }
@@ -585,50 +608,51 @@ function syncCompute(now, beats){
 function syLevel(r){ return r>=SY_MIN.alta ? "alta" : r>=SY_MIN.media ? "media" : "bassa"; }
 function syncTick(now){
   const dt = SYNC.lastTick ? Math.min(0.5,(now-SYNC.lastTick)/1000) : 0; SYNC.lastTick=now;
-  if(SYNC.level && SYNC.level!=="?" && !S.pauseAt) SYNC.time[SYNC.level]+=dt;
+  if(SYNC.raw && !S.pauseAt) SYNC.time[SYNC.raw]+=dt;                  // tempo contato sulle letture vere
   if(now-SYNC.at<SY_EVERY) return; SYNC.at=now;
   const r = syncCompute(now, HR.beats), pill=$("syPill");
-  if(!r){ SYNC.level=null; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Serve circa mezzo minuto di battiti."; return; }
-  if(r.bad){ SYNC.level="?"; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Il segnale si è interrotto: aspetto che torni stabile."; return; }
+  if(!r){ SYNC.level=null; SYNC.raw=null; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Serve circa mezzo minuto di battiti."; return; }
+  if(r.bad){ SYNC.level="?"; SYNC.raw=null; pill.dataset.l=""; pill.textContent="sintonia –"; $("syTxt").textContent="Il segnale si è interrotto: aspetto che torni stabile."; return; }
   const prev=SYNC.level, raw=syLevel(r.ratio), ri=SY_LEVELS.indexOf(raw), pi=SY_LEVELS.indexOf(prev);
-  // sale subito, scende solo se il calo si conferma due volte di fila: meno nervosa
-  let lv=raw; if(pi>=0 && ri<pi){ SYNC.down=(SYNC.down||0)+1; if(SYNC.down<2) lv=prev; } 
-  if(lv===raw) SYNC.down=0;
+  // sale subito; scende solo se 2 delle ultime 3 letture sono più basse: meno nervosa, ma onesta
+  SYNC.raws.push(ri); if(SYNC.raws.length>3) SYNC.raws.shift(); SYNC.raw=raw;
+  let lv=raw;
+  if(pi>=0 && ri<pi){ const low=SYNC.raws.filter(v=>v<pi); lv = low.length>=2 ? SY_LEVELS[Math.max(...low)] : prev; }
   SYNC.hist.push(r.ratio); if(SYNC.hist.length>40) SYNC.hist.shift();
-  SYNC.level=lv; SYNC.ratio=r.ratio; if(!SYNC.first) SYNC.first=lv;
+  SYNC.level=lv; SYNC.ratio=r.ratio; SYNC.last=lv; if(!SYNC.first) SYNC.first=lv;
   const old = SYNC.hist.length>3 ? SYNC.hist[SYNC.hist.length-4] : null;           // 9 secondi fa
   const trend = old===null ? 0 : (r.ratio>old*1.25 ? 1 : (r.ratio<old*0.8 ? -1 : 0));
   pill.dataset.l=lv; pill.textContent="sintonia "+lv+(trend>0?" ↑":"");
   // il feedback premia e basta: niente rimproveri, solo un suggerimento gentile se resta bassa
   if(lv==="bassa"){ if(!SYNC.lowSince) SYNC.lowSince=now; }
   else SYNC.lowSince=0;
-  const up = prev && SY_LEVELS.indexOf(lv)>SY_LEVELS.indexOf(prev);
+  const up = SY_LEVELS.indexOf(lv)>SY_LEVELS.indexOf(prev);            // anche la prima lettura conta come salita
   $("syTxt").textContent =
     lv==="alta" ? "Il battito segue il respiro." :
     lv==="media" ? (up||trend>0 ? "Il battito comincia a seguire il respiro." : "Continua con calma.") :
-    (SYNC.lowSince && now-SYNC.lowSince>=20000 ? SY_TIPS[(SYNC.tip++)%SY_TIPS.length] : "Segui il cerchio, senza sforzo.");
-  if(lv==="alta" && up && now-SYNC.lastCue>45000){ SYNC.lastCue=now; speak("Il battito segue il respiro. Continua così, senza sforzo."); }
+    (SYNC.lowSince && now-SYNC.lowSince>=20000 ? SY_TIPS[(now-SYNC.tipAt>=15000 ? (SYNC.tipAt=now, ++SYNC.tip) : SYNC.tip)%SY_TIPS.length] : "Segui il cerchio, senza sforzo.");
+  if(lv==="alta" && up && now-SYNC.lastCue>45000){ SYNC.lastCue=now; SYNC.cue="Il battito segue il respiro. Continua così, senza sforzo."; }
 }
 function hrFinish(){
   if(!HR.on){ $("stHr").hidden=true; $("stWave").hidden=true; $("stSyHi").hidden=true; $("stSyTr").hidden=true; $("hrEndNote").hidden=true; stopCam(); return; }
-  const hs=HR.beats.map(x=>x.hr), w=hrWaves(), ww=w.length>2 ? w.slice(1) : w;  // il primo respiro serve ad assestarsi
+  const cb=cleanBeats(HR.beats), w=hrWaves(), ww=w.length>2 ? w.slice(1) : w;  // il primo respiro serve ad assestarsi
   $("stHr").hidden=false; $("stWave").hidden=false;
-  $("sHr").textContent = hs.length>=10 ? Math.round(hs.reduce((a,x)=>a+x,0)/hs.length) : "–";
+  $("sHr").textContent = cb.length>=10 ? Math.round(60000/(cb.reduce((a,x)=>a+x.ibi,0)/cb.length)) : "–";
   $("sWave").textContent = ww.length ? fmt1(ww.reduce((a,x)=>a+x,0)/ww.length) : "–";
   const hi=SYNC.time.alta, any=SYNC.first!==null;
   $("stSyHi").hidden=!any; $("stSyTr").hidden=!any;
-  $("sSyHi").textContent = Math.floor(hi/60)+":"+String(Math.round(hi%60)).padStart(2,"0");
-  $("sSyTr").textContent = any ? (SYNC.first===SYNC.level ? SYNC.level : SYNC.first+" → "+SYNC.level) : "–";
+  const sec=Math.round(hi); $("sSyHi").textContent = Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
+  $("sSyTr").textContent = any ? (SYNC.first===SYNC.last ? SYNC.last : SYNC.first+" → "+SYNC.last) : "–";
   $("hrEndNote").hidden=false;
   HR.on=false; HR.beats=[]; stopCam();
 }
 $("go").addEventListener("click",go);
 $("again").addEventListener("click",()=>{ show("intro"); });
-$("stop").addEventListener("click",()=>{ if(S) finish(); });
+$("stop").addEventListener("click",()=>{ if(S) finish(false); });
 $("pause").addEventListener("click",()=>{
   if(!S) return;
-  if(!S.pauseAt){ S.pauseAt=performance.now(); $("pause").textContent="Riprendi"; $("phase").textContent="In pausa"; speechSynthesis?.cancel(); }
-  else { const d=performance.now()-S.pauseAt; S.paused+=d; S.phaseT0+=d; S.pauseAt=0; $("pause").textContent="Pausa"; $("phase").textContent=phase().l; }
+  if(!S.pauseAt){ S.pauseAt=performance.now(); S.phLog.push({t:S.pauseAt, k:"pause"}); $("pause").textContent="Riprendi"; $("phase").textContent="In pausa"; speechSynthesis?.cancel(); }
+  else { const now=performance.now(), d=now-S.pauseAt; (S.pauses=S.pauses||[]).push({a:S.pauseAt, b:now}); S.phLog.push({t:now, k:phase().k}); S.paused+=d; S.phaseT0+=d; S.pauseAt=0; $("pause").textContent="Pausa"; $("phase").textContent=phase().l; }
 });
 
 // ---------- Disegno: il cerchio che respira e le particelle mosse dal soffio ----------
