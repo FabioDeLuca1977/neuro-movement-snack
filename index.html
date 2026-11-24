@@ -912,9 +912,28 @@ function load(){
         return; } } }catch(e){}
   S = exampleData(); }
 let saveFailedAt = 0;
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); return true; }
+let lastRaw=null;
+// se nel frattempo un'altra pagina ha aggiunto pause al diario, le unisco invece di sovrascriverle
+function mergeExternal(){
+  try{
+    const cur=localStorage.getItem(KEY); if(!cur || lastRaw===null || cur===lastRaw) return;
+    const o=JSON.parse(cur), old=JSON.parse(lastRaw);
+    if(!o || !Array.isArray(o.sessions)) return;
+    const seen=new Set([...(old && Array.isArray(old.sessions) ? old.sessions : []), ...S.sessions].map(x=>JSON.stringify(x)));
+    const add=o.sessions.filter(x=>x && typeof x.ex==="string" && !seen.has(JSON.stringify(x)));
+    if(!add.length) return;
+    if(S.example) S={example:false, days:[], sessions:[], exp:null, amb:S.amb, l2ok:S.l2ok};
+    S.sessions=add.concat(S.sessions).sort((p,q)=>(q.d||"").localeCompare(p.d||""));
+  }catch(e){}
+}
+function save(){ try{ mergeExternal(); const raw=JSON.stringify(S); localStorage.setItem(KEY, raw); lastRaw=raw; return true; }
   catch(e){ saveFailedAt = Date.now(); toast("Non riesco a salvare: lo spazio del browser è pieno o bloccato", true); return false; } }
-load();
+load(); try{ lastRaw=localStorage.getItem(KEY); }catch(e){}
+// il diario può cambiare da un'altra pagina (respiro guidato) o scheda: se è cambiato lo ricarico
+function syncFromStorage(){ try{ const raw=localStorage.getItem(KEY); if(raw && raw!==lastRaw){ load(); lastRaw=raw; if(typeof renderDiary==="function") renderDiary(); } }catch(e){} }
+addEventListener("pageshow", syncFromStorage);
+addEventListener("storage", e=>{ if(e.key===KEY) syncFromStorage(); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) syncFromStorage(); });
 
 // ---------- Utilità ----------
 const $ = id => document.getElementById(id);
@@ -1173,12 +1192,14 @@ function openSession(id){
   $("sxLabel").hidden=false; $("sxRunning").hidden=true; $("sxAfter").hidden=true;
   const box=$("sxStartBox");
   if(x.mins){
-    box.innerHTML=(x.breath?`<a class="btn primary block" href="respiro.html?ex=${x.id}" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:12px;background:var(--calm);border-color:var(--calm)">Guidami con voce e microfono</a>`:"")+
+    box.innerHTML=(x.breath?`<a class="btn primary block" href="respiro.html?ex=${x.id}${pre?`&pe=${pre.e}&pt=${pre.t}`:""}" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-bottom:12px;background:var(--calm);border-color:var(--calm)">Guidami con voce e microfono</a>`:"")+
       `<div class="row"><label for="sxMin">Durata</label>
       <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select></div>
       <button class="btn primary block" id="sxStart" style="margin-top:10px">Inizia</button>`;
     $("sxStart").onclick=()=>{ hbCancel(); beginRun(x, +$("sxMin").value*60000, 0); };
     hbSetup(x);
+    const gl=box.querySelector('a[href^="respiro.html"]');
+    if(gl) gl.onclick=()=>{ hbCancel(); try{ if(hbPre) sessionStorage.setItem("nms-hbpre", JSON.stringify({...hbPre, ex:x.id, at:Date.now()})); else sessionStorage.removeItem("nms-hbpre"); }catch(e){} };
     if(x.lvl===2){ const ok=!!S.l2ok; $("l2No").hidden=ok; $("l2Me").hidden=!ok; $("sxOk").checked=false; $("sxStart").disabled=true;
       $("sxOk").onchange=()=>{ $("sxStart").disabled=!(ok && $("sxOk").checked); }; }
   } else if(x.habit==="caffe"){
@@ -1581,9 +1602,7 @@ const HB_TXT = {
   vig:"Prima: 1 minuto da seduto. Dopo: siediti e misura subito, per 1 minuto. Vedi quanto è salito il battito e quanto scende in un minuto: il tuo recupero di oggi, da confrontare con le tue volte precedenti.",
   rest:"È il termine di paragone: dice quanto cambia il battito anche senza esercizio, solo restando seduti. Confrontalo con quello dei respiri.",
   move:"Qui il battito sale per il movimento: la misura descrive come stai prima e dopo, non dice se l'esercizio ha funzionato."};
-let hbPre=null, hbPost=null, hbJob=null;
-function hbStopSensors(){ HR.on=false; stopCam(); }
-function hbCancel(){ if(hbJob) hbJob.cancel=true; hbJob=null; hbStopSensors(); }
+let hbPre=null, hbPost=null;
 function hbSrcNote(src){
   return src==="ble"
     ? (navigator.bluetooth ? "Inumidisci gli elettrodi, indossa la fascia sul petto e collegala." : "Questo browser non si collega alle fasce: su iPhone serve il browser Bluefy, su Android Chrome.")
@@ -1595,6 +1614,7 @@ function hbSetup(x){
   $("sxStartBox").insertAdjacentHTML("beforeend", `<details class="box thin" id="hbBox" style="margin-top:12px">
     <summary><b>Battito prima e dopo</b><span class="muted small">facoltativo · 1 minuto</span></summary>
     <p class="small">${HB_TXT[k]}</p>
+    <p class="small muted">${HB_SAFE}</p>
     <div class="row"><label for="hbSrc" class="small">Sensore</label>
       <select id="hbSrc"><option value="cam">Dito sulla fotocamera</option><option value="ble">Fascia cardio Bluetooth</option></select>
       <button class="btn" id="hbConn" hidden>Collega la fascia</button></div>
@@ -1606,61 +1626,18 @@ function hbSetup(x){
     $("hbConn").hidden = v!=="ble" || !navigator.bluetooth;
     $("hbConn").textContent = HR.dev ? "Collegata · cambia" : "Collega la fascia";
     $("hbSrcNote").textContent = hbSrcNote(v); };
-  $("hbSrc").onchange=upd; upd();
+  $("hbSrc").onchange=()=>{ hbCancel(); upd(); }; upd();
   $("hbConn").onclick=async()=>{ try{ await hbConnect(); }catch(e){ toast(e.name==="NotFoundError" ? "Nessuna fascia scelta" : "Non riesco a collegarmi alla fascia", true); } upd(); };
   $("hbGoPre").onclick=async()=>{
+    const btn=$("hbGoPre"); btn.disabled=true;
     const src=$("hbSrc").value, r=await hbMeasure(src, "pre", k, $("hbRunPre"));
+    btn.disabled=false;
     if(!r) return;
     hbPre={src, k, a:r};
     $("hbRunPre").innerHTML=`<p class="num"><b>Prima: ${Math.round(r.hr)} battiti/min</b>${r.rm!=null?` · variabilità ${Math.round(r.rm)} ms`:""}</p>
       <p class="small muted">Ora fai l'esercizio: alla fine ti propongo la misura dopo.</p>`;
     $("hbGoPre").textContent="Rifai la misura prima";
   };
-}
-const hbR = v => v==null ? null : Math.round(v*10)/10;
-async function hbMeasure(src, phase, k, el){
-  hbCancel();
-  const vigPost = phase==="post" && k==="vig";
-  const settle = vigPost ? 0 : 15000, meas = vigPost ? 60000 : 45000;
-  if(src==="ble" && !HR.dev){ el.innerHTML=`<p class="small">Collega prima la fascia.</p>`; return null; }
-  HR.src=src; HR.beats=[]; HR.rej=0; HR.rejIbi=0; HR.status="";
-  const job = hbJob = {cancel:false};
-  el.innerHTML=`<div class="hbrun"><p class="small" id="hbPhase">Preparo il sensore…</p><p class="hbnow num" id="hbNow">–</p><p class="small muted" id="hbMsg"></p><button class="btn" id="hbStop">Annulla</button></div>`;
-  $("hbStop").onclick=()=>{ job.cancel=true; };
-  if(src==="cam"){ try{ await startCam(); }catch(e){ el.innerHTML=`<p class="small">Fotocamera non disponibile: consenti l'accesso oppure usa la fascia.</p>`; return null; } }
-  if(job.cancel || hbJob!==job){ hbStopSensors(); el.innerHTML=""; return null; }
-  HR.on=true;
-  const t0=performance.now(); let mStart=null;
-  return await new Promise(res=>{
-    const iv=setInterval(()=>{
-      const now=performance.now();
-      if(job.cancel || hbJob!==job){ clearInterval(iv); if(hbJob===job){ hbJob=null; hbStopSensors(); } el.innerHTML=""; res(null); return; }
-      if(mStart===null && now-t0>=settle){ mStart=now; HR.beats=[]; }
-      const b=HR.beats, fresh=b.length>=3 && now-b[b.length-1].t<4000;
-      $("hbNow").textContent = fresh ? Math.round(median(b.slice(-5).map(x=>x.hr)))+" battiti/min" : "–";
-      $("hbPhase").textContent = mStart===null
-        ? `Assestati: seduto, fermo, respiro normale · ${Math.ceil((settle-(now-t0))/1000)} s`
-        : `Misura in corso · ${Math.ceil((meas-(now-mStart))/1000)} s`;
-      $("hbMsg").textContent = src==="cam"
-        ? (HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
-           HR.status==="slow" ? "La fotocamera va troppo lenta su questo telefono: la misura non sarà affidabile." :
-           HR.torch===false ? "Torcia spenta: tieni il dito vicino a una luce." : "")
-        : (now-HR.liveAt>5000 ? "Non ricevo dati: controlla che la fascia tocchi bene la pelle." : "");
-      if(mStart!==null && now-mStart>=meas){
-        clearInterval(iv); const beats=HR.beats.slice(); hbJob=null; hbStopSensors();
-        let r;
-        if(vigPost){
-          const pk=hbMean(beats.filter(x=>x.t<mStart+10000)), end=hbMean(beats.filter(x=>x.t>=mStart+meas-10000));
-          r = (pk==null || end==null) ? null : {hr:hbR(end), pk:hbR(pk), rec:hbR(pk-end), rm:null};
-        } else {
-          const hr=hbMean(beats);
-          r = hr==null ? null : {hr:hbR(hr), rm: src==="ble" ? hbR(rmssd(beats)) : null};
-        }
-        if(!r) el.innerHTML=`<p class="small">Misura non riuscita: ho letto troppi pochi battiti. Riprova tenendo fermo il dito o controllando la fascia.</p>`;
-        res(r);
-      }
-    }, 250);
-  });
 }
 function hbAfterSetup(){
   const box=$("hbAfter"); hbPost=null;
@@ -1672,34 +1649,26 @@ function hbAfterSetup(){
     <button class="btn primary block" id="hbGoPost">${vig ? "Misura subito" : "Misura dopo · 1 minuto"}</button>
     <div id="hbRunPost"></div>`;
   $("hbGoPost").onclick=async()=>{
-    const r=await hbMeasure(hbPre.src, "post", hbPre.k, $("hbRunPost"));
-    if(!r) return;
-    hbPost=r; $("hbGoPost").hidden=true; $("hbRunPost").innerHTML=hbResultHTML(hbPre, r);
+    const p=hbPre; if(!p) return; const btn=$("hbGoPost"); btn.disabled=true;
+    const r=await hbMeasure(p.src, "post", p.k, $("hbRunPost"));
+    btn.disabled=false;
+    if(!r || hbPre!==p) return;
+    hbPost=r; btn.hidden=true; $("hbRunPost").innerHTML=hbResultHTML(p, r);
   };
-}
-function hbResultHTML(p, r){
-  const a=p.a, i=v=>Math.round(v), si=v=>(v>0?"+":v<0?"−":"")+Math.abs(Math.round(v));
-  if(p.k==="vig") return `<div class="cells">
-      <div class="cell"><b class="num">${i(a.hr)} → ${i(r.pk)}</b><span>BATTITO: PRIMA → SUBITO DOPO</span></div>
-      <div class="cell"><b class="num">${si(-r.rec)}</b><span>IN 1 MINUTO DI RECUPERO</span></div></div>
-    <p class="small muted">Il recupero si confronta con le tue volte precedenti, nel diario, non con altre persone.</p>`;
-  return `<div class="cells">
-      <div class="cell"><b class="num">${i(a.hr)} → ${i(r.hr)}</b><span>BATTITO: PRIMA → DOPO</span></div>
-      ${a.rm!=null && r.rm!=null ? `<div class="cell"><b class="num">${i(a.rm)} → ${i(r.rm)}</b><span>VARIABILITÀ (MS)</span></div>` : ""}</div>
-    <p class="small muted">${p.k==="move" ? "Il battito sale per il movimento: è normale." : "Una differenza di 2–3 battiti sta nel margine di errore: conta la tendenza nel diario."}</p>`;
 }
 function renderHbDiary(){
   const all=S.sessions.filter(s=>s.hb && s.hb.a);
   $("hbDiaryBox").hidden = !all.length;
   if(!all.length) return;
-  const ss=all.filter(s=>s.hb.b), row=(l,v)=>`<div class="lrow"><b>${l}</b><span>${v}</span></div>`;
+  const ok=v=>typeof v==="number" && isFinite(v);
+  const ss=all.filter(s=>s.hb.b && ok(s.hb.a.hr) && (s.hb.k==="vig" ? ok(s.hb.b.rec) : ok(s.hb.b.hr))), row=(l,v)=>`<div class="lrow"><b>${l}</b><span>${v}</span></div>`;
   const G=[["calm","Respirazioni"],["rest","Pausa vera, il confronto"],["vig","Esercizi intensi"],["move","Altri esercizi"]];
   const n={}; let html="";
   for(const [k,l] of G){
     const g=ss.filter(s=>s.hb.k===k); n[k]=g.length; if(!g.length) continue;
-    if(k==="vig") html+=row(l, `recupero in 1 minuto ${sgn(-avg(g.map(s=>s.hb.b.rec)))} battiti/min · ${g.length} ${g.length===1?"misura":"misure"}`);
+    if(k==="vig") html+=row(l, `recupero nel minuto dopo ${sgn(-avg(g.map(s=>s.hb.b.rec)))} battiti/min · ${g.length} ${g.length===1?"misura":"misure"}`);
     else {
-      const rmG=g.filter(s=>s.hb.a.rm!=null && s.hb.b.rm!=null);
+      const rmG=g.filter(s=>ok(s.hb.a.rm) && ok(s.hb.b.rm));
       html+=row(l, `battito ${sgn(avg(g.map(s=>s.hb.b.hr-s.hb.a.hr)))} · ${g.length} ${g.length===1?"misura":"misure"}`
         + (rmG.length ? ` · variabilità ${sgn(avg(rmG.map(s=>s.hb.b.rm-s.hb.a.rm)))} ms` : ""));
     }

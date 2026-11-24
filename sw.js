@@ -1,5 +1,5 @@
 // Cache semplice per usare l'app anche offline
-const CACHE = "pitstop-v25";
+const CACHE = "pitstop-v27";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "respiro.html", "battito.js",
   "fonts/fonts.css", "fonts/caladea-400.woff2", "fonts/caladea-700.woff2", "fonts/lato-400.woff2", "fonts/lato-700.woff2", "fonts/ibm-plex-mono-400.woff2"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });

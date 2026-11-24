@@ -84,6 +84,16 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
 .sypill[data-l="media"]{border-color:#7fd4b3;color:#7fd4b3}
 .sypill[data-l="alta"]{background:#7fd4b3;border-color:#7fd4b3;color:#173c49}
 #syTxt{font-size:.9rem;color:var(--ink)}
+.hbrun{display:grid;gap:6px;justify-items:start}
+.hbnow{font-family:var(--display);font-weight:700;font-size:2rem;line-height:1}
+.cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.cell{background:#ffffff;color:#2f3437;border-radius:12px;padding:8px 14px}
+.cell b{display:block;font-family:var(--display);font-size:1.6rem;color:#14785a}
+.cell span{font-size:.68rem;font-weight:700;letter-spacing:.08em}
+.muted{color:var(--dim)}
+.savebox{display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px}
+.savebox .rg{display:grid;grid-template-columns:7rem 1fr 2rem;align-items:center;gap:8px}
+.savebox input[type=range]{width:100%;accent-color:var(--teal)}
 @media (prefers-reduced-motion: reduce){ .panel{backdrop-filter:none} }
 </style>
 </head>
@@ -123,6 +133,8 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
       </div>
       <button class="btn" id="hrConnect" hidden>Collega la fascia</button>
       <p class="small" id="hrNote"></p>
+      <p class="small" id="hrSafe" hidden></p>
+      <div id="rbPreBox" hidden><button class="btn" id="rbGoPre">Misura il battito prima · 1 minuto</button><div id="rbRunPre"></div></div>
     </div>
     <button class="btn primary" id="go">Inizia</button>
     <p class="small">Il suono non viene registrato né inviato: il telefono misura solo quanto è forte, istante per istante, e lo dimentica.</p>
@@ -166,6 +178,17 @@ select{font:inherit;min-height:44px;border-radius:12px;border:1px solid var(--li
     <p id="endNote"></p>
     <p class="small" id="hrEndNote" hidden>L'onda del respiro nel battito è la differenza tra il battito più alto (di solito inspirando) e il più basso (espirando) in ogni respiro. Con il respiro lento tende ad allargarsi. È un riscontro per te, non una misura medica, e non viene salvato. La sintonia dice quanto il battito segue il respiro della guida in modo regolare: indica che l'esercizio sta funzionando, non quanto sei rilassato, e le soglie sono ancora provvisorie. Come ti senti adesso? Annotalo nel diario: è il dato che conta di più.</p>
     <p class="small">Il microfono sente il rumore dell'espirazione: non misura il battito. Gli studi sul respiro lento indicano un ritmo di circa 4,5–7 respiri al minuto (MS 4.1).</p>
+    <div class="savebox" id="saveBox">
+      <div id="rbAfter" hidden><button class="btn" id="rbConn" hidden>Collega la fascia</button><button class="btn" id="rbGoPost">Misura il battito dopo · 1 minuto</button><div id="rbRunPost"></div></div>
+      <p class="eyebrow">Nel diario</p>
+      <div id="rbPreAsk" hidden>
+        <div class="rg"><label for="rpe" class="small">Energia prima</label><input type="range" id="rpe" min="0" max="10" value="5"><b id="rpeV">5</b></div>
+        <div class="rg"><label for="rpt" class="small">Tensione prima</label><input type="range" id="rpt" min="0" max="10" value="5"><b id="rptV">5</b></div>
+      </div>
+      <div class="rg"><label for="rae" class="small">Energia adesso</label><input type="range" id="rae" min="0" max="10" value="5"><b id="raeV">5</b></div>
+      <div class="rg"><label for="rat" class="small">Tensione adesso</label><input type="range" id="rat" min="0" max="10" value="5"><b id="ratV">5</b></div>
+      <button class="btn primary" id="rbSave">Salva nel diario</button>
+    </div>
     <div class="row"><button class="btn" id="again">Ricomincia</button><a class="btn primary" href="./" style="display:flex;align-items:center;justify-content:center;text-decoration:none">Torna all'app</a></div>
   </div>
 </div>
@@ -340,7 +363,7 @@ function finish(complete){
   speak("Fatto. Ottimo lavoro.");
   stopMic(); try{ wake?.release(); }catch(e){}
   S=null; $("phase").textContent=""; $("count").textContent=""; $("hint").textContent="";
-  show("end");
+  show("end"); rbEndSetup();
 }
 
 // ---------- Battito (prova): la lettura dei sensori è in battito.js ----------
@@ -350,6 +373,7 @@ function hrNote(){
   const v=$("hrSrc").value, ble=!!navigator.bluetooth;
   $("hrConnect").hidden = v!=="ble" || !ble;
   $("hrConnect").textContent = HR.dev ? "Collegata: "+(HR.dev.name||"fascia")+" · cambia" : "Collega la fascia";
+  $("hrSafe").hidden = v==="none";
   $("hrNote").textContent =
     v==="ble" ? (ble ? "Inumidisci gli elettrodi, indossa la fascia sul petto e premi Collega. Il battito resta su questo dispositivo e non viene salvato."
                      : "Questo browser non si collega alle fasce. Su iPhone e iPad Safari non lo permette: apri l'app con il browser gratuito Bluefy. Su Android usa Chrome, su computer Chrome o Edge.")
@@ -374,10 +398,12 @@ async function connectStrap(){
     $("hrNote").textContent = e.name==="NotFoundError" ? "Nessuna fascia scelta. Controlla che sia indossata (si accende a contatto con la pelle) e riprova." : "Non riesco a collegarmi alla fascia ("+e.message+").";
   }
   $("hrConnect").hidden=false; $("hrConnect").textContent = HR.dev ? "Collegata: "+(HR.dev.name||"fascia")+" · cambia" : "Collega la fascia";
+  rbPreUi();
 }
-HR.onDisconnect = ()=>{ hrMsg("La fascia si è scollegata."); hrNote(); };
+$("hrSafe").textContent = HB_SAFE;
+HR.onDisconnect = ()=>{ hrMsg("La fascia si è scollegata."); hrNote(); rbPreUi(); };
 async function hrStart(){
-  syReset();
+  hbCancel(); syReset();
   HR.src=$("hrSrc").value; HR.beats=[]; HR.rej=0; HR.rejIbi=0; HR.status=""; HR.on=false; hrMsg("");
   if(HR.src==="cam"){
     try{ await startCam(); HR.on=true;
@@ -524,8 +550,63 @@ function hrFinish(){
   $("hrEndNote").hidden=false;
   HR.on=false; HR.beats=[]; stopCam();
 }
+
+// ---------- Battito prima e dopo e salvataggio nel diario dell'app ----------
+// Stessa prassi dell'app (battito.js). Il diario è quello dell'app, sullo stesso dispositivo.
+const DKEY = "pitstop.v2";
+const okQ = v => /^\d{1,2}$/.test(v||"") && +v<=10;
+const hasPre = okQ(QP.get("pe")) && okQ(QP.get("pt")), QPE = +QP.get("pe"), QPT = +QP.get("pt");
+let rbPre=null, rbPost=null;
+try{ const sp=JSON.parse(sessionStorage.getItem("nms-hbpre")||"null"); sessionStorage.removeItem("nms-hbpre");
+  if(sp && sp.ex===exId && Date.now()-sp.at<20*60000 && sp.a && isFinite(sp.a.hr) && (sp.src==="cam"||sp.src==="ble")) rbPre={src:sp.src, k:"calm", a:sp.a, fromApp:true};
+}catch(e){}
+function rbPreUi(){ const v=$("hrSrc").value; $("rbPreBox").hidden = !rbPre?.fromApp && (v==="none" || (v==="ble" && !HR.dev)); }
+$("hrSrc").addEventListener("change", ()=>{ hbCancel(); rbPreUi(); });
+if(rbPre){ $("rbRunPre").innerHTML=`<p><b>Prima, misurato nell'app: ${Math.round(rbPre.a.hr)} battiti/min</b></p>`; $("rbGoPre").textContent="Rifai la misura prima"; }
+rbPreUi();
+$("rbGoPre").addEventListener("click", async ()=>{
+  const src=$("hrSrc").value; if(src==="none") return;
+  $("rbGoPre").disabled=true; const r=await hbMeasure(src, "pre", "calm", $("rbRunPre")); $("rbGoPre").disabled=false;
+  if(!r) return;
+  rbPre={src, k:"calm", a:r};
+  $("rbRunPre").innerHTML=`<p><b>Prima: ${Math.round(r.hr)} battiti/min</b>${r.rm!=null?` · variabilità ${Math.round(r.rm)} ms`:""}</p>`;
+  $("rbGoPre").textContent="Rifai la misura prima";
+});
+["rpe","rpt","rae","rat"].forEach(id=>$(id).addEventListener("input",()=>{ $(id+"V").textContent=$(id).value; }));
+function rbEndSetup(){
+  rbPost=null; $("rbAfter").hidden=!rbPre; $("rbGoPost").hidden=false; $("rbGoPost").disabled=false; $("rbRunPost").innerHTML=""; rbEndConn();
+  $("rbPreAsk").hidden=hasPre;
+  if(hasPre){ $("rae").value=QPE; $("rat").value=QPT; $("raeV").textContent=QPE; $("ratV").textContent=QPT; }
+  $("rbSave").disabled=false; $("rbSave").textContent="Salva nel diario";
+}
+$("rbGoPost").addEventListener("click", async ()=>{
+  const p=rbPre; if(!p) return;
+  $("rbGoPost").disabled=true; const r=await hbMeasure(p.src, "post", "calm", $("rbRunPost")); $("rbGoPost").disabled=false;
+  if(!r || rbPre!==p) return;
+  rbPost=r; $("rbGoPost").hidden=true; $("rbRunPost").innerHTML=hbResultHTML(p, r);
+});
+$("rbConn").addEventListener("click", async ()=>{ await connectStrap(); rbEndConn(); });
+function rbEndConn(){ $("rbConn").hidden = !(rbPre && rbPre.src==="ble" && !HR.dev); }
+const isoD = d => d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+function saveToDiary(rec){
+  try{
+    const raw=localStorage.getItem(DKEY); let o=null; try{ o=raw?JSON.parse(raw):null; }catch(e){}
+    // diario assente, rovinato o con i dati di esempio: riparto pulito tenendo le impostazioni dell'ambassador
+    if(!o || typeof o!=="object" || !Array.isArray(o.days) || !Array.isArray(o.sessions) || o.example)
+      o={example:false, days:[], sessions:[], exp:null, amb:o&&o.amb, l2ok:o&&o.l2ok};
+    o.sessions.unshift(rec); localStorage.setItem(DKEY, JSON.stringify(o)); return true;
+  }catch(e){ return false; }
+}
+$("rbSave").addEventListener("click", ()=>{
+  hbCancel();
+  const rec={ex: PATTERNS[exId] ? exId : "respiro", d: isoD(new Date()),
+    pe: hasPre ? QPE : +$("rpe").value, pt: hasPre ? QPT : +$("rpt").value, ae:+$("rae").value, at:+$("rat").value};
+  if(rbPre) rec.hb={s:rbPre.src, k:"calm", a:rbPre.a, b:rbPost};
+  if(saveToDiary(rec)){ $("rbSave").disabled=true; $("rbSave").textContent="Salvato nel diario"; rbPre=null; rbPost=null; $("rbAfter").hidden=true; }
+  else $("rbSave").textContent="Non riesco a salvare: spazio del browser pieno o bloccato";
+});
 $("go").addEventListener("click",go);
-$("again").addEventListener("click",()=>{ show("intro"); });
+$("again").addEventListener("click",()=>{ hbCancel(); rbPre=null; rbPost=null; $("rbRunPre").innerHTML=""; $("rbGoPre").textContent="Misura il battito prima · 1 minuto"; show("intro"); rbPreUi(); });
 $("stop").addEventListener("click",()=>{ if(S) finish(false); });
 $("pause").addEventListener("click",()=>{
   if(!S) return;
