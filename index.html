@@ -238,6 +238,9 @@ select{max-width:100%}
 .brand .logo svg{width:100%;height:100%;display:block}
 .rsug{display:flex;align-items:center;gap:8px}
 .rsug .picto{width:28px;height:28px;flex:none}
+.hbrun{display:grid;gap:6px;justify-items:start;margin-top:8px}
+.hbrun .hbnow{font-family:var(--display);font-weight:700;font-size:2rem;line-height:1}
+#hbBox summary{cursor:pointer;min-height:40px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -366,6 +369,12 @@ select{max-width:100%}
           <div class="cell"><b class="num" id="sDT">–</b><span>TENSIONE PRIMA → DOPO</span></div>
         </div>
         <p class="muted small">Misure che dai tu, subito prima e subito dopo la pausa, senza gruppo di confronto. Parte del cambiamento può dipendere dall'aspettativa: servono a capire cosa funziona per te, non dimostrano un effetto.</p>
+      </div>
+
+      <div class="box" id="hbDiaryBox" hidden>
+        <h3>Battito prima e dopo</h3>
+        <div id="hbDiary"></div>
+        <p class="small muted">Misure con la fascia o la fotocamera, da seduti. È un dato sulla salute: resta solo su questo dispositivo e non entra nel codice anonimo.</p>
       </div>
 
       <div class="box">
@@ -505,7 +514,7 @@ select{max-width:100%}
       </div>
       <div class="box">
         <h3>Privacy e limiti</h3>
-        <p>I dati restano solo su questo dispositivo, nel browser, e nessuno li vede: l'app non li invia a nessun server. Nel diario puoi annotare il dolore a collo e spalle: è un dato sulla salute, per questo resta solo qui e puoi cancellarlo quando vuoi. Se vuoi, dal Diario puoi dare all'ambassador un codice anonimo con le medie del mese: vedi prima cosa contiene, e il riepilogo di reparto compare solo con almeno 5 persone. Neuro Movement Snack non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
+        <p>I dati restano solo su questo dispositivo, nel browser, e nessuno li vede: l'app non li invia a nessun server. Nel diario puoi annotare il dolore a collo e spalle e, se vuoi, il battito misurato prima e dopo una pausa: sono dati sulla salute, per questo restano solo qui e puoi cancellarlo quando vuoi. Se vuoi, dal Diario puoi dare all'ambassador un codice anonimo con le medie del mese: vedi prima cosa contiene, e il riepilogo di reparto compare solo con almeno 5 persone. Neuro Movement Snack non è uno strumento medico. Se la tensione o la stanchezza restano alte per giorni, parlane con il medico o con lo sportello di ascolto della tua azienda.</p>
         <button class="btn" id="wipeAll">Cancella tutti i miei dati</button>
       </div>
     </section>
@@ -576,6 +585,7 @@ select{max-width:100%}
     <div id="sxAfter" class="sx" hidden>
       <div><p class="group-h">La tua pausa</p><h2>Fatto</h2></div>
       <div class="cells" id="sxStats"></div>
+      <div class="box" id="hbAfter" hidden></div>
       <div class="box">
       <h3>Come stai dopo la pausa?</h3>
       <div class="range energy"><div class="lbl"><label for="pe">Energia</label><b class="num" id="peVal">5</b></div><input type="range" id="pe" min="0" max="10" value="5"></div>
@@ -588,6 +598,7 @@ select{max-width:100%}
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="battito.js"></script>
 <script>
 // ---------- Contenuti: mappa unica Pit Stop + Movement Snack (vedi "Mappa studi-esercizi") ----------
 // dir = direzione · lvl = livello di intensità · grade = P/A/E (catalogo Movement Snack) · src = [studio, forza della prova]
@@ -1166,7 +1177,8 @@ function openSession(id){
       `<div class="row"><label for="sxMin">Durata</label>
       <select id="sxMin">${x.mins.map(m=>`<option value="${m}">${m} min</option>`).join("")}</select></div>
       <button class="btn primary block" id="sxStart" style="margin-top:10px">Inizia</button>`;
-    $("sxStart").onclick=()=>beginRun(x, +$("sxMin").value*60000, 0);
+    $("sxStart").onclick=()=>{ hbCancel(); beginRun(x, +$("sxMin").value*60000, 0); };
+    hbSetup(x);
     if(x.lvl===2){ const ok=!!S.l2ok; $("l2No").hidden=ok; $("l2Me").hidden=!ok; $("sxOk").checked=false; $("sxStart").disabled=true;
       $("sxOk").onchange=()=>{ $("sxStart").disabled=!(ok && $("sxOk").checked); }; }
   } else if(x.habit==="caffe"){
@@ -1274,14 +1286,17 @@ function finish(){
   const p=pre||{e:+$("e").value,t:+$("t").value};
   $("pe").value=p.e; $("pt").value=p.t; $("peVal").textContent=p.e; $("ptVal").textContent=p.t;
   $("sxAfter").hidden=false; $("session").scrollTop=0;
+  hbAfterSetup();
 }
 $("sxSave").addEventListener("click",()=>{
   const p=pre||{e:+$("e").value,t:+$("t").value};
   if(S.example) clearExamples(true);
-  S.sessions.unshift({ex:cur.id,d:iso(new Date()),pe:p.e,pt:p.t,ae:+$("pe").value,at:+$("pt").value}); save();
+  const rec={ex:cur.id,d:iso(new Date()),pe:p.e,pt:p.t,ae:+$("pe").value,at:+$("pt").value};
+  if(hbPre) rec.hb={s:hbPre.src, k:hbPre.k, a:hbPre.a, b:hbPost};
+  S.sessions.unshift(rec); save(); hbCancel(); hbPre=null; hbPost=null;
   pre=null; closeSession(); toast("Pausa salvata nel diario");
 });
-function closeSession(){ keepAwake(false); stopTimers(); run=null; $("session").hidden=true; $("session").classList.remove("night"); document.body.style.overflow=""; if(lastFocus && document.contains(lastFocus)) lastFocus.focus(); }
+function closeSession(){ hbCancel(); keepAwake(false); stopTimers(); run=null; $("session").hidden=true; $("session").classList.remove("night"); document.body.style.overflow=""; if(lastFocus && document.contains(lastFocus)) lastFocus.focus(); }
 $("sxClose").addEventListener("click",closeSession);
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !$("session").hidden) closeSession();
   // Tab resta dentro la finestra dell'esercizio
@@ -1554,8 +1569,150 @@ $("aggDl").addEventListener("click",()=>{ if(!aggLast) return;
   const a=document.createElement("a"); a.href=url; a.download=`riepilogo-reparto-${aggLast.m}.txt`; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),2000); });
 
+
+// ---------- Battito prima e dopo (facoltativo): la prassi di misura ----------
+// Inizio e fine della pausa, da seduti: 15 s per assestarsi e 45 s di misura.
+// Negli esercizi intensi la misura "dopo" parte subito e dura 60 s: quanto è salito il battito e quanto scende.
+// I valori restano solo su questo dispositivo, nel diario; il codice anonimo per l'azienda non li contiene.
+const HB_KIND = {respiro:"calm", guidato:"calm", sospiro:"calm", pausa:"rest", scale:"vig", corsa:"vig", activity:"vig"};
+const hbKind = x => HB_KIND[x.id] || "move";
+const HB_TXT = {
+  calm:"Misura 1 minuto prima e 1 minuto dopo, da seduto. Con la fascia vedi anche la variabilità del battito, il dato che gli studi sul respiro lento guardano di più. Non aspettarti per forza un battito più basso: in uno studio sul sospiro ciclico non è cambiato.",
+  vig:"Prima: 1 minuto da seduto. Dopo: siediti e misura subito, per 1 minuto. Vedi quanto è salito il battito e quanto scende in un minuto: il tuo recupero di oggi, da confrontare con le tue volte precedenti.",
+  rest:"È il termine di paragone: dice quanto cambia il battito anche senza esercizio, solo restando seduti. Confrontalo con quello dei respiri.",
+  move:"Qui il battito sale per il movimento: la misura descrive come stai prima e dopo, non dice se l'esercizio ha funzionato."};
+let hbPre=null, hbPost=null, hbJob=null;
+function hbStopSensors(){ HR.on=false; stopCam(); }
+function hbCancel(){ if(hbJob) hbJob.cancel=true; hbJob=null; hbStopSensors(); }
+function hbSrcNote(src){
+  return src==="ble"
+    ? (navigator.bluetooth ? "Inumidisci gli elettrodi, indossa la fascia sul petto e collegala." : "Questo browser non si collega alle fasce: su iPhone serve il browser Bluefy, su Android Chrome.")
+    : "Appoggia l'indice sulla fotocamera posteriore coprendo anche il flash, senza premere, e resta fermo. Le immagini non vengono salvate.";
+}
+function hbSetup(x){
+  hbPre=null; hbPost=null; hbCancel();
+  const k=hbKind(x);
+  $("sxStartBox").insertAdjacentHTML("beforeend", `<details class="box thin" id="hbBox" style="margin-top:12px">
+    <summary><b>Battito prima e dopo</b><span class="muted small">facoltativo · 1 minuto</span></summary>
+    <p class="small">${HB_TXT[k]}</p>
+    <div class="row"><label for="hbSrc" class="small">Sensore</label>
+      <select id="hbSrc"><option value="cam">Dito sulla fotocamera</option><option value="ble">Fascia cardio Bluetooth</option></select>
+      <button class="btn" id="hbConn" hidden>Collega la fascia</button></div>
+    <p class="small muted" id="hbSrcNote"></p>
+    <button class="btn block" id="hbGoPre">Misura prima · 1 minuto</button>
+    <div id="hbRunPre"></div>
+  </details>`);
+  const upd=()=>{ const v=$("hbSrc").value;
+    $("hbConn").hidden = v!=="ble" || !navigator.bluetooth;
+    $("hbConn").textContent = HR.dev ? "Collegata · cambia" : "Collega la fascia";
+    $("hbSrcNote").textContent = hbSrcNote(v); };
+  $("hbSrc").onchange=upd; upd();
+  $("hbConn").onclick=async()=>{ try{ await hbConnect(); }catch(e){ toast(e.name==="NotFoundError" ? "Nessuna fascia scelta" : "Non riesco a collegarmi alla fascia", true); } upd(); };
+  $("hbGoPre").onclick=async()=>{
+    const src=$("hbSrc").value, r=await hbMeasure(src, "pre", k, $("hbRunPre"));
+    if(!r) return;
+    hbPre={src, k, a:r};
+    $("hbRunPre").innerHTML=`<p class="num"><b>Prima: ${Math.round(r.hr)} battiti/min</b>${r.rm!=null?` · variabilità ${Math.round(r.rm)} ms`:""}</p>
+      <p class="small muted">Ora fai l'esercizio: alla fine ti propongo la misura dopo.</p>`;
+    $("hbGoPre").textContent="Rifai la misura prima";
+  };
+}
+const hbR = v => v==null ? null : Math.round(v*10)/10;
+async function hbMeasure(src, phase, k, el){
+  hbCancel();
+  const vigPost = phase==="post" && k==="vig";
+  const settle = vigPost ? 0 : 15000, meas = vigPost ? 60000 : 45000;
+  if(src==="ble" && !HR.dev){ el.innerHTML=`<p class="small">Collega prima la fascia.</p>`; return null; }
+  HR.src=src; HR.beats=[]; HR.rej=0; HR.rejIbi=0; HR.status="";
+  const job = hbJob = {cancel:false};
+  el.innerHTML=`<div class="hbrun"><p class="small" id="hbPhase">Preparo il sensore…</p><p class="hbnow num" id="hbNow">–</p><p class="small muted" id="hbMsg"></p><button class="btn" id="hbStop">Annulla</button></div>`;
+  $("hbStop").onclick=()=>{ job.cancel=true; };
+  if(src==="cam"){ try{ await startCam(); }catch(e){ el.innerHTML=`<p class="small">Fotocamera non disponibile: consenti l'accesso oppure usa la fascia.</p>`; return null; } }
+  if(job.cancel || hbJob!==job){ hbStopSensors(); el.innerHTML=""; return null; }
+  HR.on=true;
+  const t0=performance.now(); let mStart=null;
+  return await new Promise(res=>{
+    const iv=setInterval(()=>{
+      const now=performance.now();
+      if(job.cancel || hbJob!==job){ clearInterval(iv); if(hbJob===job){ hbJob=null; hbStopSensors(); } el.innerHTML=""; res(null); return; }
+      if(mStart===null && now-t0>=settle){ mStart=now; HR.beats=[]; }
+      const b=HR.beats, fresh=b.length>=3 && now-b[b.length-1].t<4000;
+      $("hbNow").textContent = fresh ? Math.round(median(b.slice(-5).map(x=>x.hr)))+" battiti/min" : "–";
+      $("hbPhase").textContent = mStart===null
+        ? `Assestati: seduto, fermo, respiro normale · ${Math.ceil((settle-(now-t0))/1000)} s`
+        : `Misura in corso · ${Math.ceil((meas-(now-mStart))/1000)} s`;
+      $("hbMsg").textContent = src==="cam"
+        ? (HR.status==="nofinger" ? "Appoggia il dito sulla fotocamera, coprendo anche il flash." :
+           HR.status==="slow" ? "La fotocamera va troppo lenta su questo telefono: la misura non sarà affidabile." :
+           HR.torch===false ? "Torcia spenta: tieni il dito vicino a una luce." : "")
+        : (now-HR.liveAt>5000 ? "Non ricevo dati: controlla che la fascia tocchi bene la pelle." : "");
+      if(mStart!==null && now-mStart>=meas){
+        clearInterval(iv); const beats=HR.beats.slice(); hbJob=null; hbStopSensors();
+        let r;
+        if(vigPost){
+          const pk=hbMean(beats.filter(x=>x.t<mStart+10000)), end=hbMean(beats.filter(x=>x.t>=mStart+meas-10000));
+          r = (pk==null || end==null) ? null : {hr:hbR(end), pk:hbR(pk), rec:hbR(pk-end), rm:null};
+        } else {
+          const hr=hbMean(beats);
+          r = hr==null ? null : {hr:hbR(hr), rm: src==="ble" ? hbR(rmssd(beats)) : null};
+        }
+        if(!r) el.innerHTML=`<p class="small">Misura non riuscita: ho letto troppi pochi battiti. Riprova tenendo fermo il dito o controllando la fascia.</p>`;
+        res(r);
+      }
+    }, 250);
+  });
+}
+function hbAfterSetup(){
+  const box=$("hbAfter"); hbPost=null;
+  if(!hbPre){ box.hidden=true; box.innerHTML=""; return; }
+  const vig = hbPre.k==="vig";
+  box.hidden=false;
+  box.innerHTML=`<h3>Battito dopo</h3>
+    <p class="small">${vig ? "Siediti e misura subito: 1 minuto. Vedi quanto è salito e quanto scende." : "Da seduto, come prima: 15 secondi per assestarti e 45 di misura."}</p>
+    <button class="btn primary block" id="hbGoPost">${vig ? "Misura subito" : "Misura dopo · 1 minuto"}</button>
+    <div id="hbRunPost"></div>`;
+  $("hbGoPost").onclick=async()=>{
+    const r=await hbMeasure(hbPre.src, "post", hbPre.k, $("hbRunPost"));
+    if(!r) return;
+    hbPost=r; $("hbGoPost").hidden=true; $("hbRunPost").innerHTML=hbResultHTML(hbPre, r);
+  };
+}
+function hbResultHTML(p, r){
+  const a=p.a, i=v=>Math.round(v), si=v=>(v>0?"+":v<0?"−":"")+Math.abs(Math.round(v));
+  if(p.k==="vig") return `<div class="cells">
+      <div class="cell"><b class="num">${i(a.hr)} → ${i(r.pk)}</b><span>BATTITO: PRIMA → SUBITO DOPO</span></div>
+      <div class="cell"><b class="num">${si(-r.rec)}</b><span>IN 1 MINUTO DI RECUPERO</span></div></div>
+    <p class="small muted">Il recupero si confronta con le tue volte precedenti, nel diario, non con altre persone.</p>`;
+  return `<div class="cells">
+      <div class="cell"><b class="num">${i(a.hr)} → ${i(r.hr)}</b><span>BATTITO: PRIMA → DOPO</span></div>
+      ${a.rm!=null && r.rm!=null ? `<div class="cell"><b class="num">${i(a.rm)} → ${i(r.rm)}</b><span>VARIABILITÀ (MS)</span></div>` : ""}</div>
+    <p class="small muted">${p.k==="move" ? "Il battito sale per il movimento: è normale." : "Una differenza di 2–3 battiti sta nel margine di errore: conta la tendenza nel diario."}</p>`;
+}
+function renderHbDiary(){
+  const all=S.sessions.filter(s=>s.hb && s.hb.a);
+  $("hbDiaryBox").hidden = !all.length;
+  if(!all.length) return;
+  const ss=all.filter(s=>s.hb.b), row=(l,v)=>`<div class="lrow"><b>${l}</b><span>${v}</span></div>`;
+  const G=[["calm","Respirazioni"],["rest","Pausa vera, il confronto"],["vig","Esercizi intensi"],["move","Altri esercizi"]];
+  const n={}; let html="";
+  for(const [k,l] of G){
+    const g=ss.filter(s=>s.hb.k===k); n[k]=g.length; if(!g.length) continue;
+    if(k==="vig") html+=row(l, `recupero in 1 minuto ${sgn(-avg(g.map(s=>s.hb.b.rec)))} battiti/min · ${g.length} ${g.length===1?"misura":"misure"}`);
+    else {
+      const rmG=g.filter(s=>s.hb.a.rm!=null && s.hb.b.rm!=null);
+      html+=row(l, `battito ${sgn(avg(g.map(s=>s.hb.b.hr-s.hb.a.hr)))} · ${g.length} ${g.length===1?"misura":"misure"}`
+        + (rmG.length ? ` · variabilità ${sgn(avg(rmG.map(s=>s.hb.b.rm-s.hb.a.rm)))} ms` : ""));
+    }
+  }
+  if(!ss.length) html+=`<p class="small muted">Hai solo misure prima: completa anche quella dopo, alla fine dell'esercizio.</p>`;
+  else if(n.calm>=5 && n.rest>=5){
+    const dc=avg(ss.filter(s=>s.hb.k==="calm").map(s=>s.hb.b.hr-s.hb.a.hr)), dr=avg(ss.filter(s=>s.hb.k==="rest").map(s=>s.hb.b.hr-s.hb.a.hr));
+    html+=`<p class="small">Dopo i respiri il battito cambia in media di ${sgn(dc)}, dopo la pausa vera di ${sgn(dr)}. La differenza tra i due è la parte che più probabilmente dipende dall'esercizio.</p>`;
+  } else html+=`<p class="small muted">Per leggere una tendenza servono almeno 5 misure complete per tipo di esercizio, e qualche pausa vera misurata come confronto.</p>`;
+  $("hbDiary").innerHTML=html;
+}
 const _renderDiary = renderDiary;
-renderDiary = function(){ _renderDiary(); renderAmb(); renderShare(); };
+renderDiary = function(){ _renderDiary(); renderAmb(); renderShare(); renderHbDiary(); };
 
 // ---------- Versione installabile: notifiche e funzionamento offline ----------
 $("notif").addEventListener("change",async()=>{
